@@ -14,6 +14,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
+<script src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
 
 <style>
 :root {
@@ -26,15 +27,10 @@
 }
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-/* ▼ 修正点: htmlとbodyの両方を白に固定し、スクロール端の色切れを完全に防ぐ */
-html {
-  background-color: var(--bg);
-}
-
+html { background-color: var(--bg); }
 body { 
   font-family: var(--font-sans); color: var(--ink); background: var(--bg); 
   font-size: 15px; line-height: 1.6; min-height: 100vh; 
-  padding-bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 120px);
 }
 
 #app {
@@ -44,6 +40,7 @@ body {
   min-height: 100vh;
   box-shadow: 0 0 40px rgba(0,0,0,0.05);
   position: relative;
+  padding-bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 120px);
 }
 
 button { font-family: inherit; border: none; background: none; cursor: pointer; color: inherit; }
@@ -180,9 +177,12 @@ a { color: inherit; text-decoration: none; }
 .k-card { background: #1C1C1E; border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
 .k-btn { background: var(--leaf); color: #000; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 13px; }
 .k-btn.gh { background: transparent; color: #fff; border: 1px solid #555; }
-
-/* ▼ 注文履歴から消すボタンのスタイル */
 .rm-order-btn { display: block; width: 100%; padding: 12px; margin-top: 16px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--ink-sub); font-size: 13px; font-weight: 600; text-align: center; }
+
+#payment-form { display: none; margin-top: 16px; background: var(--bg-card); padding: 16px; border-radius: 12px; }
+#payment-form.on { display: block; }
+.sq-card-wrapper { margin-bottom: 16px; min-height: 80px; }
+.secure-notice { font-size: 11px; color: var(--ink-sub); line-height: 1.5; margin-bottom: 16px; background: var(--bg); padding: 12px; border-radius: 8px; border: 1px solid var(--line); }
 </style>
 </head>
 <body>
@@ -228,7 +228,6 @@ a { color: inherit; text-decoration: none; }
       <div class="hero-title">Gastronomy &amp; Coffee</div>
       <div class="hero-desc">法政大学 美食・珈琲研究会</div>
     </div>
-
     <div class="sec-title">Menu</div>
     <div style="margin: 0 20px 24px; font-weight: 700; font-size: 18px; letter-spacing: 0.05em;">ALL ¥300</div>
     <div id="menuWrap" class="menu-list"></div>
@@ -266,10 +265,7 @@ a { color: inherit; text-decoration: none; }
     <div class="sh-head"><h3 id="iName"></h3><button class="sh-x tap" data-close><svg><use href="#i-close"/></svg></button></div>
     <div class="sh-body">
       <div id="iOpts"></div>
-      
-      <!-- 在庫警告の表示 -->
       <div id="iStockWarn" style="color: var(--alert); font-weight: 700; font-size: 13px; margin-bottom: 12px; display: none; background: rgba(255,59,48,0.1); padding: 8px; border-radius: 8px; text-align: center;"></div>
-      
       <div class="qty-ctrl">
         <span>数量</span>
         <div class="q-btns"><button class="q-btn tap" id="qSub">-</button><div class="q-num" id="qVal">1</div><button class="q-btn tap" id="qAdd">+</button></div>
@@ -291,9 +287,18 @@ a { color: inherit; text-decoration: none; }
   <div class="sheet" id="sh-pay">
     <div class="sh-grab"></div>
     <div class="sh-head"><h3>お支払い方法</h3><button class="sh-x tap" data-close><svg><use href="#i-close"/></svg></button></div>
-    <div class="sh-body" style="display:flex;flex-direction:column;gap:16px;">
-      <button class="cta tap" onclick="doOrder('事前決済')">事前決済 (Square)</button>
-      <button class="cta ghost tap" onclick="doOrder('店頭決済')">店頭でお支払い</button>
+    <div class="sh-body">
+      <div id="pay-methods" style="display:flex;flex-direction:column;gap:16px;">
+        <button class="cta tap" onclick="showSquareForm()">クレジットカード (事前決済)</button>
+        <button class="cta ghost tap" onclick="doOrder('店頭決済')">店頭でお支払い</button>
+      </div>
+      <div id="payment-form">
+        <div class="secure-notice">
+          <div>ご入力いただくクレジットカード情報は、決済代行会社(Square)によって暗号化され安全に処理されます。当サイトがカード情報を取得・保持することは一切ありません。</div>
+        </div>
+        <div id="card-container" class="sq-card-wrapper"></div>
+        <button class="cta tap" id="card-button">決済して注文する</button>
+      </div>
     </div>
   </div>
 
@@ -314,9 +319,8 @@ a { color: inherit; text-decoration: none; }
       <div class="suc-oid" id="sOid"></div>
     </div>
   </div>
-</div> <!-- /#app -->
+</div>
 
-<!-- KDSは別画面として扱うので #app の外に配置 -->
 <div id="kds">
   <div class="k-hd">
     <div style="font-weight: 700; font-size: 16px;">KDS / <span id="kdsSyncStatus" style="font-size:12px; color:#888;">Local Mode</span></div>
@@ -343,6 +347,9 @@ a { color: inherit; text-decoration: none; }
 
 <script>
 "use strict";
+
+const SQUARE_APP_ID = "sandbox-sq0idb-WThyQnfz1eCB61VNmae8CA";
+const SQUARE_LOCATION_ID = "L64BACJ7R7003";
 
 const firebaseConfig = {
   apiKey: "AIzaSyALp5cInmwNrxI_rKFZsaPxysjQEvMxXo",
@@ -372,8 +379,6 @@ const MENU = [
 let ST = { wait: 8, stk: {}, ord: [] };
 MENU.forEach(m => ST.stk[m.id] = m.stock);
 let CA = [];
-
-// ▼ 自分が注文したIDと、自分で非表示にしたIDを記録
 let myOrders = [];
 let hiddenOrders = [];
 
@@ -386,13 +391,11 @@ if (IS_SYNC_READY) {
     if (data) {
       ST.wait = data.wait ?? 8;
       ST.stk = data.stk || {};
-      
       if (data.ord) {
         ST.ord = Object.values(data.ord).sort((a,b) => a.ts - b.ts);
       } else {
         ST.ord = [];
       }
-      
       rMenu(); rOrd(); rK();
       
       $('#syncPill').style.color = "var(--leaf)";
@@ -439,7 +442,14 @@ function rMenu() {
 
 let oSh = null;
 function showSh(s) { if(oSh) oSh.classList.remove('on'); oSh = $(s); oSh.classList.add('on');$('#veil').classList.add('on'); document.body.style.overflow='hidden'; }
-window.cloSh = () => { if(oSh) oSh.classList.remove('on'); $('#veil').classList.remove('on'); document.body.style.overflow=''; oSh=null; };
+window.cloSh = () => { 
+  if(oSh) oSh.classList.remove('on'); 
+  $('#veil').classList.remove('on'); 
+  document.body.style.overflow=''; 
+  oSh=null; 
+  if ($('#pay-methods')) $('#pay-methods').style.display = 'flex';
+  if ($('#payment-form')) $('#payment-form').classList.remove('on');
+};
 $('#veil').addEventListener('click', cloSh); $$('[data-close]').forEach(b=>b.addEventListener('click', cloSh));
 
 let CS = { i: null, q: 1, s: {} };
@@ -491,18 +501,71 @@ $('#cartBar').addEventListener('click', ()=>{
 window.rm = (i) => { CA.splice(i,1); uC(); if(!CA.length) cloSh(); else $('#cartBar').click(); };
 $('#goPay').addEventListener('click', ()=>{ cloSh(); setTimeout(()=>showSh('#sh-pay'), 300); });
 
+let payments, card;
+async function initSquare() {
+  if (!window.Square) return;
+  try {
+    payments = window.Square.payments(SQUARE_APP_ID, SQUARE_LOCATION_ID);
+    card = await payments.card();
+    await card.attach('#card-container');
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+window.showSquareForm = () => {
+  $('#pay-methods').style.display = 'none';
+  $('#payment-form').classList.add('on');
+};
+
+$('#card-button').addEventListener('click', async (event) => {
+  event.preventDefault();
+  if (!card) return;
+  
+  for(const c of CA) if((ST.stk[c.id]||0)<c.q) { toast(`${c.nm} の在庫が不足しています`); return; }
+
+  const btn = $('#card-button');
+  btn.classList.add('disabled');
+  btn.textContent = "決済処理中...";
+
+  try {
+    const result = await card.tokenize();
+    if (result.status === 'OK') {
+      const amt = CA.reduce((a,c)=>a+(c.pr*c.q),0);
+      const response = await fetch('/api/payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sourceId: result.token,
+          amount: amt
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        doOrder('事前決済');
+      } else {
+        toast("決済に失敗しました");
+      }
+    } else {
+      toast("カード情報が正しくありません");
+    }
+  } catch (e) {
+    console.error(e);
+    toast("エラーが発生しました");
+  } finally {
+    btn.classList.remove('disabled');
+    btn.textContent = "決済して注文する";
+  }
+});
+
 window.doOrder = (md) => {
   for(const c of CA) if((ST.stk[c.id]||0)<c.q) { toast(`${c.nm} の在庫が不足しています`); cloSh(); return; }
   
   const oid = 'BIKO-' + Math.floor(1000+Math.random()*9000);
   const oData = { id: oid, md: md, tm: new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}), it: [...CA], st: 'new', ts: Date.now() };
 
-  // 自分の注文したIDをローカルに記録する
   myOrders.push(oid);
-
-  if (md === '事前決済') {
-    // 将来的にはここでVercelのSquare決済サーバーに通信します
-  }
 
   if (IS_SYNC_READY) {
     CA.forEach(c => {
@@ -527,7 +590,6 @@ window.doOrder = (md) => {
   }, 2800);
 };
 
-// ▼ お客さんが自分で注文を非表示にする機能
 window.hideOrder = (oid) => {
   hiddenOrders.push(oid);
   rOrd();
@@ -535,8 +597,6 @@ window.hideOrder = (oid) => {
 
 function rOrd() {
   const ar = $('#orderWrap');
-  
-  // 自分の注文で、非表示にしておらず、かつ店員が「完了済(非表示)」にしていないものだけを表示
   const myCurrentOrders = ST.ord.filter(o => 
     myOrders.includes(o.id) && 
     !hiddenOrders.includes(o.id) && 
@@ -597,11 +657,11 @@ window.adv = (i, reverse = false) => {
   if (reverse) {
     if (o.st === 'done') nSt = 'prep';
     else if (o.st === 'prep') nSt = 'new';
-    else if (o.st === 'archived') nSt = 'done'; // 誤って非表示にしたものを戻す
+    else if (o.st === 'archived') nSt = 'done';
   } else {
     if (o.st === 'new') nSt = 'prep';
     else if (o.st === 'prep') nSt = 'done';
-    else if (o.st === 'done') nSt = 'archived'; // 完了済から非表示状態へ
+    else if (o.st === 'done') nSt = 'archived';
   }
 
   if (nSt === o.st) return;
@@ -619,13 +679,11 @@ function rK() {
   $('#kWait').textContent = ST.wait;
   $('#kStock').innerHTML = MENU.map(m => `<div class="k-card"><div><b>${m.name}</b></div><div style="display:flex;gap:12px;align-items:center"><button class="k-btn gh tap" onclick="cStk('${m.id}',-1)">-</button><span style="font-size:16px;font-weight:700;width:24px;text-align:center">${ST.stk[m.id]||0}</span><button class="k-btn gh tap" onclick="cStk('${m.id}',1)">+</button></div></div>`).join('');
   
-  // アーカイブ（非表示）以外の注文を表示
   const ao = ST.ord.map((o,i)=>({...o,i})).filter(o => o.st !== 'archived').sort((a,b) => b.ts - a.ts);
   
   $('#kOrders').innerHTML = ao.length ? ao.map(o => {
     const isDone = o.st === 'done';
     const isNew = o.st === 'new';
-    // 完了状態の次のボタンは「完了済(非表示)」にする
     const btnText = isNew ? '調理開始' : (o.st === 'prep' ? '完了' : 'お渡し済 (消す)');
     
     return `<div class="k-card" style="align-items:flex-start; ${isDone ? 'opacity:0.6;' : ''}">
@@ -641,9 +699,10 @@ function rK() {
   }).join('') : '<div style="color:#888;text-align:center;padding:20px">No Orders</div>';
 }
 
-window.addEventListener('load', ()=>{ 
+window.addEventListener('load', async ()=>{ 
   if(!IS_SYNC_READY) { rMenu(); rOrd(); }
   setTimeout(()=>$('#splash').classList.add('hidden'), 1500); 
+  await initSquare();
 });
 </script>
 </body>
