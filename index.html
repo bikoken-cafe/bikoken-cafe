@@ -22,24 +22,27 @@
   --tabbar-h: 70px; --safe-bottom: env(safe-area-inset-bottom, 20px);
   --font-serif-en: 'Cormorant Garamond', serif; --font-serif-jp: 'Shippori Mincho', serif; --font-sans: 'Inter', 'Noto Sans JP', sans-serif;
   --ease: cubic-bezier(0.25, 1, 0.5, 1);
-  --max-w: 600px; /* パソコン・タブレット用の最大幅制限 */
+  --max-w: 600px;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+/* ▼ 修正点: htmlとbodyの両方を白に固定し、スクロール端の色切れを完全に防ぐ */
+html {
+  background-color: var(--bg);
+}
+
 body { 
   font-family: var(--font-sans); color: var(--ink); background: var(--bg); 
   font-size: 15px; line-height: 1.6; min-height: 100vh; 
   padding-bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 120px);
-  /* パソコン・タブレット用の背景色設定 */
-  background-color: #f5f5f7; 
 }
 
-/* アプリ全体のコンテナ（中央寄せ） */
 #app {
   max-width: var(--max-w);
   margin: 0 auto;
   background: var(--bg);
   min-height: 100vh;
-  box-shadow: 0 0 40px rgba(0,0,0,0.05); /* PC画面での境界線を少しリッチに */
+  box-shadow: 0 0 40px rgba(0,0,0,0.05);
   position: relative;
 }
 
@@ -177,6 +180,9 @@ a { color: inherit; text-decoration: none; }
 .k-card { background: #1C1C1E; border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
 .k-btn { background: var(--leaf); color: #000; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 13px; }
 .k-btn.gh { background: transparent; color: #fff; border: 1px solid #555; }
+
+/* ▼ 注文履歴から消すボタンのスタイル */
+.rm-order-btn { display: block; width: 100%; padding: 12px; margin-top: 16px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--ink-sub); font-size: 13px; font-weight: 600; text-align: center; }
 </style>
 </head>
 <body>
@@ -367,6 +373,10 @@ let ST = { wait: 8, stk: {}, ord: [] };
 MENU.forEach(m => ST.stk[m.id] = m.stock);
 let CA = [];
 
+// ▼ 自分が注文したIDと、自分で非表示にしたIDを記録
+let myOrders = [];
+let hiddenOrders = [];
+
 const $ = s => document.querySelector(s); const $$ = s => [...document.querySelectorAll(s)];
 function toast(m) { $('#toast').textContent = m; $('#toast').classList.add('on'); setTimeout(()=>$('#toast').classList.remove('on'), 2500); }
 
@@ -400,7 +410,6 @@ if (IS_SYNC_READY) {
   });
 }
 
-// PCの大画面などではスクロールしなくてもヘッダーの色を変える
 let ticking = false;
 window.addEventListener('scroll', () => {
   if (!ticking) {
@@ -439,7 +448,6 @@ window.opI = (id) => {
   CS = { i: m, q: 1, s: {} };
   $('#iName').textContent = m.name;
   
-  // 在庫警告の表示ロジック
   const st = ST.stk[m.id] || 0;
   const warnEl = $('#iStockWarn');
   if (st <= 5 && st > 0) {
@@ -489,10 +497,11 @@ window.doOrder = (md) => {
   const oid = 'BIKO-' + Math.floor(1000+Math.random()*9000);
   const oData = { id: oid, md: md, tm: new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}), it: [...CA], st: 'new', ts: Date.now() };
 
-  // Square事前決済の場合、今は一旦「店頭決済」と同じ動きをさせます（後でVercelと繋ぐため）
+  // 自分の注文したIDをローカルに記録する
+  myOrders.push(oid);
+
   if (md === '事前決済') {
     // 将来的にはここでVercelのSquare決済サーバーに通信します
-    // 今は仮で通します
   }
 
   if (IS_SYNC_READY) {
@@ -518,10 +527,24 @@ window.doOrder = (md) => {
   }, 2800);
 };
 
+// ▼ お客さんが自分で注文を非表示にする機能
+window.hideOrder = (oid) => {
+  hiddenOrders.push(oid);
+  rOrd();
+};
+
 function rOrd() {
   const ar = $('#orderWrap');
-  if(!ST.ord.length) { ar.innerHTML = '<div style="text-align:center;padding:40px 0;color:#888">注文はありません</div>'; return; }
-  ar.innerHTML = [...ST.ord].reverse().map(o => {
+  
+  // 自分の注文で、非表示にしておらず、かつ店員が「完了済(非表示)」にしていないものだけを表示
+  const myCurrentOrders = ST.ord.filter(o => 
+    myOrders.includes(o.id) && 
+    !hiddenOrders.includes(o.id) && 
+    o.st !== 'archived'
+  );
+
+  if(!myCurrentOrders.length) { ar.innerHTML = '<div style="text-align:center;padding:40px 0;color:#888">注文はありません</div>'; return; }
+  ar.innerHTML = [...myCurrentOrders].reverse().map(o => {
     const isP = o.st==='prep'||o.st==='done', isD = o.st==='done';
     const w = isD?'100%':(isP?'50%':'0%');
     return `<div class="trk-wrap"><div class="trk-head"><div class="trk-ti"><div class="pulse" style="${isD?'animation:none;background:#888':''}"></div>${isD?'お渡し準備完了':(isP?'調理中':'受付完了')}</div><div class="trk-id">${o.id}</div></div>
@@ -529,7 +552,9 @@ function rOrd() {
     <div class="trk-step act"><div class="trk-dot"><svg><use href="#i-check"/></svg></div>受付</div>
     <div class="trk-step ${isP?'act':''}"><div class="trk-dot"><svg><use href="#i-check"/></svg></div>調理中</div>
     <div class="trk-step ${isD?'act':''}"><div class="trk-dot"><svg><use href="#i-check"/></svg></div>受取可</div></div>
-    <div class="trk-items">${o.it.map(c=>`${c.nm}${c.sp?'('+c.sp+')':''} <span style="color:#888;font-size:12px;font-weight:400">×${c.q}</span>`).join('<br>')}</div></div>`;
+    <div class="trk-items">${o.it.map(c=>`${c.nm}${c.sp?'('+c.sp+')':''} <span style="color:#888;font-size:12px;font-weight:400">×${c.q}</span>`).join('<br>')}</div>
+    ${isD ? `<button class="rm-order-btn tap" onclick="hideOrder('${o.id}')">注文履歴から消す</button>` : ''}
+    </div>`;
   }).join('');
 }
 
@@ -551,7 +576,7 @@ window.doLogin = () => {
   } else toast("パスワードが違います");
 };
 
-window.exitKds = ()=>{ $('#kds').classList.remove('on'); document.body.style.backgroundColor='#f5f5f7'; $('#app').style.display='block'; rMenu(); };
+window.exitKds = ()=>{ $('#kds').classList.remove('on'); document.body.style.backgroundColor='#FFFFFF'; document.documentElement.style.backgroundColor='#FFFFFF'; $('#app').style.display='block'; rMenu(); };
 
 window.setWait = (d)=>{
   const nW = Math.max(0, ST.wait + d);
@@ -565,7 +590,6 @@ window.cStk = (id,d)=>{
   else { ST.stk[id]=nS; rK(); }
 };
 
-// KDSのステータス進行（戻す機能を追加）
 window.adv = (i, reverse = false) => {
   const o = ST.ord[i];
   let nSt = o.st;
@@ -573,9 +597,11 @@ window.adv = (i, reverse = false) => {
   if (reverse) {
     if (o.st === 'done') nSt = 'prep';
     else if (o.st === 'prep') nSt = 'new';
+    else if (o.st === 'archived') nSt = 'done'; // 誤って非表示にしたものを戻す
   } else {
     if (o.st === 'new') nSt = 'prep';
     else if (o.st === 'prep') nSt = 'done';
+    else if (o.st === 'done') nSt = 'archived'; // 完了済から非表示状態へ
   }
 
   if (nSt === o.st) return;
@@ -593,12 +619,14 @@ function rK() {
   $('#kWait').textContent = ST.wait;
   $('#kStock').innerHTML = MENU.map(m => `<div class="k-card"><div><b>${m.name}</b></div><div style="display:flex;gap:12px;align-items:center"><button class="k-btn gh tap" onclick="cStk('${m.id}',-1)">-</button><span style="font-size:16px;font-weight:700;width:24px;text-align:center">${ST.stk[m.id]||0}</span><button class="k-btn gh tap" onclick="cStk('${m.id}',1)">+</button></div></div>`).join('');
   
-  const ao = ST.ord.map((o,i)=>({...o,i})).sort((a,b) => b.ts - a.ts);
+  // アーカイブ（非表示）以外の注文を表示
+  const ao = ST.ord.map((o,i)=>({...o,i})).filter(o => o.st !== 'archived').sort((a,b) => b.ts - a.ts);
   
   $('#kOrders').innerHTML = ao.length ? ao.map(o => {
     const isDone = o.st === 'done';
     const isNew = o.st === 'new';
-    const btnText = isNew ? '調理開始' : (o.st === 'prep' ? '完了' : '完了済');
+    // 完了状態の次のボタンは「完了済(非表示)」にする
+    const btnText = isNew ? '調理開始' : (o.st === 'prep' ? '完了' : 'お渡し済 (消す)');
     
     return `<div class="k-card" style="align-items:flex-start; ${isDone ? 'opacity:0.6;' : ''}">
       <div style="flex:1">
@@ -606,8 +634,8 @@ function rK() {
         <div style="margin-top:8px;font-weight:700;line-height:1.6">${o.it.map(c=>`${c.nm} ${c.sp?'('+c.sp+')':''} x${c.q}`).join('<br>')}</div>
       </div>
       <div style="display:flex; flex-direction:column; gap:8px;">
-        <button class="k-btn tap" onclick="adv(${o.i})" ${isDone ? 'disabled style="background:#555;color:#888;"' : ''}>${btnText}</button>
-        ${!isNew ? `<button class="k-btn gh tap" onclick="adv(${o.i}, true)" style="font-size:11px; padding:4px 8px;">↩ 戻す</button>` : ''}
+        <button class="k-btn tap" onclick="adv(${o.i})" ${isDone ? 'style="background:#333;color:#fff;"' : ''}>${btnText}</button>
+        ${!isNew ? `<button class="k-btn gh tap" onclick="adv(${o.i}, true)" style="font-size:11px; padding:4px 8px;">戻す</button>` : ''}
       </div>
     </div>`;
   }).join('') : '<div style="color:#888;text-align:center;padding:20px">No Orders</div>';
