@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#FFFFFF">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>BIKOKEN Cafe</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;600;700&family=Noto+Sans+JP:wght@400;600;700&family=Shippori+Mincho:wght@600;700&display=swap" rel="stylesheet">
+
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
+
+<style>
+:root {
+  --ink: #1C1C1E; --ink-sub: #8E8E93; --bg: #FFFFFF; --bg-card: #F2F2F7;
+  --brand: #5A8B9C; --leaf: #34C759; --alert: #FF3B30; --line: #E5E5EA;
+  --tabbar-h: 70px; --safe-bottom: env(safe-area-inset-bottom, 20px);
+  --font-serif-en: 'Cormorant Garamond', serif; --font-serif-jp: 'Shippori Mincho', serif; --font-sans: 'Inter', 'Noto Sans JP', sans-serif;
+  --ease: cubic-bezier(0.25, 1, 0.5, 1);
+  --max-w: 600px; /* パソコン・タブレット用の最大幅制限 */
+}
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body { 
+  font-family: var(--font-sans); color: var(--ink); background: var(--bg); 
+  font-size: 15px; line-height: 1.6; min-height: 100vh; 
+  padding-bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 120px);
+  /* パソコン・タブレット用の背景色設定 */
+  background-color: #f5f5f7; 
+}
+
+/* アプリ全体のコンテナ（中央寄せ） */
+#app {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  background: var(--bg);
+  min-height: 100vh;
+  box-shadow: 0 0 40px rgba(0,0,0,0.05); /* PC画面での境界線を少しリッチに */
+  position: relative;
+}
+
+button { font-family: inherit; border: none; background: none; cursor: pointer; color: inherit; }
+a { color: inherit; text-decoration: none; }
+.tap { transition: transform 0.2s var(--ease), opacity 0.2s var(--ease); }
+.tap:active { transform: scale(0.96); opacity: 0.8; }
+.ic { width: 24px; height: 24px; display: inline-block; vertical-align: middle; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;}
+
+#splash { position: fixed; inset: 0; z-index: 9999; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.6s ease, visibility 0.6s ease; }
+#splash.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+.logo-wrap-splash { display: flex; align-items: baseline; user-select: none; }
+.logo-wrap-splash .logo-biko { font-family: var(--font-serif-en); font-weight: 700; color: var(--ink); font-size: 42px; opacity: 0; transform: translateY(10px); animation: splashFade 2s var(--ease) forwards; }
+.logo-wrap-splash .logo-ken { font-family: var(--font-sans); font-weight: 400; letter-spacing: 0.08em; color: var(--brand); margin-left: 2px; font-size: 38px; opacity: 0; transform: translateY(10px); animation: splashFade 2s var(--ease) 0.1s forwards; }
+.logo-wrap-splash .logo-dot { font-family: var(--font-sans); font-weight: 900; color: var(--leaf); margin-left: 2px; font-size: 42px; opacity: 0; transform: translateY(10px); animation: splashFade 2s var(--ease) 0.1s forwards; }
+.splash-sub { font-size: 10px; color: var(--ink-sub); letter-spacing: 0.25em; text-transform: uppercase; margin-top: 12px; font-weight: 600; opacity: 0; transform: translateY(10px); animation: splashFade 2s var(--ease) 0.2s forwards; }
+@keyframes splashFade { 20% { opacity: 1; transform: translateY(0); } 80% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-5px); } }
+
+.header { position: sticky; top: 0; z-index: 50; padding-top: env(safe-area-inset-top); background: rgba(255,255,255,0.85); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-bottom: 0.5px solid transparent; transition: border-color 0.3s; }
+.header.scrolled { border-bottom-color: var(--line); }
+.header-in { display: flex; align-items: center; justify-content: space-between; height: 52px; padding: 0 20px; }
+.header-logo { cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; padding: 4px 0; touch-action: manipulation; }
+.logo-wrap { display: flex; align-items: baseline; }
+.logo-b { font-family: var(--font-serif-en); font-weight: 700; font-size: 24px; color: var(--ink); transition: color 0.5s var(--ease); }
+.header.scrolled .logo-b { color: var(--brand); }
+.logo-rest { display: inline-flex; align-items: baseline; overflow: hidden; max-width: 120px; opacity: 1; white-space: nowrap; transition: max-width 0.5s var(--ease), opacity 0.4s var(--ease); }
+.header.scrolled .logo-rest { max-width: 0; opacity: 0; }
+.logo-iko { font-family: var(--font-serif-en); font-weight: 700; font-size: 22px; color: var(--ink); }
+.logo-ken { font-family: var(--font-sans); font-weight: 400; font-size: 20px; letter-spacing: 0.08em; color: var(--brand); margin-left: 2px; }
+.logo-dot { font-family: var(--font-sans); font-weight: 900; font-size: 22px; color: var(--leaf); margin-left: 2px; transition: transform 0.5s var(--ease); }
+.status-pill { font-size: 11px; font-weight: 700; color: var(--leaf); display: flex; align-items: center; gap: 6px; background: rgba(52,199,89,0.1); padding: 6px 12px; border-radius: 99px; border: 1px solid rgba(52,199,89,0.2); transition: 0.3s; }
+.status-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--leaf); }
+
+.pane { display: none; animation: fadeIn 0.3s var(--ease); padding-top: 10px; }
+.pane.on { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.sec-title { margin: 16px 20px; font-family: var(--font-serif-en); font-style: italic; font-weight: 600; font-size: 26px; }
+
+.hero { padding: 10px 20px 24px; }
+.hero-cover { width: 100%; height: 200px; border-radius: 12px; background: url('https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=1000&auto=format&fit=crop') center/cover; margin-bottom: 24px; }
+.hero-title { font-family: var(--font-serif-en); font-weight: 600; font-size: 32px; color: var(--ink); line-height: 1.1; }
+.hero-desc { font-family: var(--font-serif-jp); font-weight: 600; font-size: 14px; color: var(--ink-sub); margin-top: 8px; }
+
+.menu-list { display: flex; flex-direction: column; gap: 48px; margin-bottom: 40px; }
+.item-wrap { padding: 0 20px; cursor: pointer; text-align: left; }
+.item-img { width: 100%; aspect-ratio: 1/1; border-radius: 12px; background: var(--bg-card) center/cover; margin-bottom: 16px; position: relative; }
+.item-name { font-family: var(--font-serif-jp); font-weight: 700; font-size: 22px; line-height: 1.4; }
+.item-price { font-weight: 600; font-size: 16px; color: var(--ink-sub); margin-top: 4px; }
+.stock-warn { font-weight: 700; font-size: 13px; color: var(--alert); margin-top: 6px; }
+.sold-out { position: absolute; inset: 0; background: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 20px; letter-spacing: 0.1em; border-radius: 12px; backdrop-filter: blur(2px); }
+
+.tabbar { position: fixed; bottom: 0; z-index: 40; height: var(--tabbar-h); padding-bottom: var(--safe-bottom); background: rgba(255,255,255,0.85); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-top: 0.5px solid var(--line); display: flex; align-items: center; justify-content: space-around; width: 100%; max-width: var(--max-w); left: 50%; transform: translateX(-50%);}
+.tab { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; color: #A0A0A0; width: 80px; }
+.tab.on { color: var(--ink); }
+
+.cartbar { position: fixed; bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 16px); z-index: 41; width: calc(100% - 40px); max-width: calc(var(--max-w) - 40px); left: 50%; margin-left: 0; background: rgba(255,255,255,0.95); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border: 1px solid var(--line); border-radius: 99px; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: translate(-50%, 150%); opacity: 0; visibility: hidden; pointer-events: none; transition: transform 0.4s var(--ease), opacity 0.3s, visibility 0.4s; }
+.cartbar.show { transform: translate(-50%, 0); opacity: 1; visibility: visible; pointer-events: auto; }
+.cart-l { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 14px; }
+.cart-badge { background: var(--ink); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+.cart-r { font-weight: 700; }
+
+.veil { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,0.4); opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+.veil.on { opacity: 1; pointer-events: auto; }
+.sheet { position: fixed; bottom: 0; z-index: 61; width: 100%; max-width: var(--max-w); left: 50%; margin-left: 0; background: var(--bg); border-radius: 20px 20px 0 0; padding-bottom: var(--safe-bottom); transform: translate(-50%, 110%); visibility: hidden; transition: transform 0.4s var(--ease), visibility 0.4s ease; }
+.sheet.on { transform: translate(-50%, 0); visibility: visible; }
+.sh-grab { width: 36px; height: 4px; border-radius: 99px; background: #E0E0E0; margin: 10px auto 8px; }
+.sh-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 24px 16px; border-bottom: 1px solid var(--line); }
+.sh-head h3 { font-family: var(--font-serif-jp); font-weight: 700; font-size: 18px; }
+.sh-x { width: 32px; height: 32px; border-radius: 50%; background: var(--bg-card); display: flex; align-items: center; justify-content: center; color: var(--ink-sub); }
+.sh-body { padding: 24px; max-height: 80vh; overflow-y: auto; }
+
+.qty-ctrl { display: flex; align-items: center; justify-content: space-between; background: var(--bg-card); padding: 16px 20px; border-radius: 12px; margin-bottom: 24px; font-weight: 600; }
+.q-btns { display: flex; align-items: center; gap: 20px; }
+.q-btn { width: 32px; height: 32px; border-radius: 50%; background: var(--bg); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+.q-num { font-size: 18px; font-weight: 700; min-width: 20px; text-align: center; }
+
+.cta { width: 100%; padding: 16px; border-radius: 12px; background: var(--ink); color: #fff; font-weight: 700; font-size: 15px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.cta.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.cta.disabled { opacity: 0.5; pointer-events: none; }
+
+.opt-lbl { font-weight: 600; font-size: 13px; margin-bottom: 12px; display: block; color: var(--ink-sub); }
+.opts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+.opt { padding: 14px; border: 1px solid var(--line); border-radius: 10px; font-weight: 600; font-size: 14px; text-align: center; background: var(--bg); }
+.opt.sel { border-color: var(--ink); border-width: 2px; padding: 13px; }
+
+.trk-wrap { padding-bottom: 32px; margin: 0 20px 32px; border-bottom: 1px solid var(--line); }
+.trk-wrap:last-child { border-bottom: none; }
+.trk-head { display: flex; justify-content: space-between; margin-bottom: 16px; align-items: center; }
+.trk-ti { font-weight: 700; font-size: 16px; font-family: var(--font-serif-jp); display: flex; align-items: center; gap: 8px; }
+.pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--brand); animation: pulseAnim 1.5s infinite; }
+.trk-id { font-size: 13px; font-weight: 600; color: var(--ink-sub); }
+
+.trk { position: relative; display: flex; justify-content: space-between; margin: 0 10px; }
+.trk::before { content: ''; position: absolute; top: 12px; left: 0; right: 0; height: 3px; background: var(--line); z-index: 1; border-radius: 2px; }
+.trk-fill { position: absolute; top: 12px; left: 0; height: 3px; background: var(--brand); z-index: 2; border-radius: 2px; transition: width 0.6s var(--ease); }
+
+.trk-step { position: relative; z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 11px; color: var(--ink-sub); font-weight: 600; }
+.trk-dot { width: 28px; height: 28px; border-radius: 50%; background: var(--line); border: 3px solid var(--bg); display: flex; align-items: center; justify-content: center; color: transparent; transition: 0.3s; }
+.trk-dot svg { width: 14px; height: 14px; }
+.trk-step.act .trk-dot { background: var(--brand); color: #fff; transform: scale(1.1); box-shadow: 0 0 0 4px rgba(90,139,156,0.2); }
+.trk-step.act { color: var(--ink); font-weight: 700; }
+.trk-step.done .trk-dot { background: var(--brand); color: #fff; }
+.trk-step.done { color: var(--ink); }
+
+@keyframes pulseAnim { 0% { box-shadow: 0 0 0 0 rgba(90,139,156,0.4); } 70% { box-shadow: 0 0 0 6px rgba(90,139,156,0); } 100% { box-shadow: 0 0 0 0 rgba(90,139,156,0); } }
+.trk-items { margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--line); font-size: 14px; font-weight: 600; line-height: 1.8; }
+
+.link-card { display: flex; align-items: center; padding: 16px; background: var(--bg-card); border-radius: 12px; margin-bottom: 12px; }
+.link-card svg { margin-right: 16px; color: var(--brand); }
+
+#success { position: fixed; inset: 0; z-index: 99999; background: var(--brand); color: #fff; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: 0.5s; pointer-events: none; }
+#success.on { opacity: 1; visibility: visible; pointer-events: auto; }
+.suc-in { text-align: center; transform: scale(0.95); transition: 0.6s var(--ease); }
+#success.on .suc-in { transform: scale(1); }
+.suc-ic { position: relative; width: 64px; height: 64px; margin: 0 auto 24px; }
+.suc-ic svg { width: 100%; height: 100%; }
+.steam { position: absolute; top: -12px; left: 0; right: 0; display: flex; justify-content: center; gap: 6px; }
+.steam span { width: 2px; height: 14px; background: rgba(255,255,255,0.8); border-radius: 99px; opacity: 0; animation: stm 2s infinite ease-in-out; }
+.steam span:nth-child(2){ animation-delay: 0.3s; }
+.steam span:nth-child(3){ animation-delay: 0.6s; }
+@keyframes stm { 0%{transform:translateY(6px) scaleY(0.5);opacity:0;} 50%{opacity:1;} 100%{transform:translateY(-16px) scaleY(1.5);opacity:0;filter:blur(2px);} }
+.suc-ti { font-family: var(--font-serif-en); font-size: 36px; font-style: italic; font-weight: 600; margin-bottom: 12px; }
+.suc-msg { font-family: var(--font-serif-jp); font-size: 15px; opacity: 0.9; margin-bottom: 24px; }
+.suc-oid { font-weight: 700; font-size: 28px; letter-spacing: 0.05em; background: rgba(0,0,0,0.15); padding: 12px 24px; border-radius: 12px; display: inline-block; }
+
+.toast { position: fixed; top: 20px; left: 50%; transform: translate(-50%, -100%); background: var(--ink); color: #fff; padding: 12px 24px; border-radius: 99px; font-weight: 600; font-size: 14px; opacity: 0; transition: 0.3s var(--ease); z-index: 9999; }
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+.login-input { width: 100%; padding: 16px; border: 1px solid var(--line); border-radius: 12px; font-size: 16px; background: var(--bg-card); outline: none; margin-bottom: 16px; font-family: var(--font-sans); }
+
+#kds { display: none; position: fixed; inset: 0; z-index: 100000; background: #000; color: #fff; overflow-y: auto; padding-bottom: 40px; }
+#kds.on { display: block; }
+.k-hd { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid #333; position: sticky; top: 0; background: #000; z-index: 10; }
+.k-sec { padding: 24px; }
+.k-card { background: #1C1C1E; border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+.k-btn { background: var(--leaf); color: #000; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 13px; }
+.k-btn.gh { background: transparent; color: #fff; border: 1px solid #555; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="i-cup" viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8zM6 1v3M10 1v3M14 1v3"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></symbol>
+  <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2H4zM8 8h8M8 12h8M8 16h4"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-ig" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><path d="M17.5 6.5h.01"/></symbol>
+  <symbol id="i-pod" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M12 2a10 10 0 0 0-10 10 10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2zM12 6a6 6 0 0 0-6 6M12 9a3 3 0 0 0-3 3"/></symbol>
+  <symbol id="i-web" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"/></symbol>
+</defs>
+</svg>
+
+<div id="splash">
+  <div class="logo-wrap-splash">
+    <span class="logo-biko">BIKO</span><span class="logo-ken">KEN</span><span class="logo-dot">.</span>
+  </div>
+  <div class="splash-sub">Gastronomy &amp; Coffee</div>
+</div>
+
+<div id="app">
+  <div class="header">
+    <div class="header-in">
+      <button class="header-logo tap" id="logoTap" title="KDS">
+        <div class="logo-wrap">
+          <span class="logo-b">B</span>
+          <span class="logo-rest"><span class="logo-iko">IKO</span><span class="logo-ken">KEN</span></span>
+          <span class="logo-dot">.</span>
+        </div>
+      </button>
+      <div class="status-pill" id="syncPill" style="color:var(--ink-sub); border-color:var(--line); background:var(--bg-card);"><span class="dot" style="background:var(--ink-sub); animation:none;"></span>約<span id="hdWait">8</span>分待ち</div>
+    </div>
+  </div>
+
+  <section class="pane on" id="p-menu">
+    <div class="hero">
+      <div class="hero-cover"></div>
+      <div class="hero-title">Gastronomy &amp; Coffee</div>
+      <div class="hero-desc">法政大学 美食・珈琲研究会</div>
+    </div>
+
+    <div class="sec-title">Menu</div>
+    <div style="margin: 0 20px 24px; font-weight: 700; font-size: 18px; letter-spacing: 0.05em;">ALL ¥300</div>
+    <div id="menuWrap" class="menu-list"></div>
+  </section>
+
+  <section class="pane" id="p-orders">
+    <div class="sec-title">Orders</div>
+    <div id="orderWrap" style="padding-bottom: 60px;"></div>
+  </section>
+
+  <section class="pane" id="p-biko">
+    <div class="sec-title">Bikoken</div>
+    <div style="margin: 0 20px;">
+      <a href="https://www.instagram.com/hosei_bisyoku_coffee/" target="_blank" class="link-card tap"><svg class="ic"><use href="#i-ig"/></svg><div style="flex:1"><b>Instagram</b><div style="font-size:11px;color:var(--ink-sub)">@hosei_bisyoku_coffee</div></div></a>
+      <a href="https://open.spotify.com/show/3tBeEl3rCe1qM9wNPzQnEP" target="_blank" class="link-card tap"><svg class="ic"><use href="#i-pod"/></svg><div style="flex:1"><b>Podcast</b><div style="font-size:11px;color:var(--ink-sub)">Spotifyにて配信中</div></div></a>
+      <a href="https://bisyokucoffee-circle.studio.site/" target="_blank" class="link-card tap"><svg class="ic"><use href="#i-web"/></svg><div style="flex:1"><b>Website</b><div style="font-size:11px;color:var(--ink-sub)">活動内容まとめ</div></div></a>
+    </div>
+  </section>
+
+  <div class="tabbar">
+    <button class="tab on tap" data-tab="menu"><svg class="ic"><use href="#i-menu"/></svg>Menu</button>
+    <button class="tab tap" data-tab="orders"><svg class="ic"><use href="#i-receipt"/></svg>Orders</button>
+    <button class="tab tap" data-tab="biko"><svg class="ic"><use href="#i-info"/></svg>Bikoken</button>
+  </div>
+
+  <div class="cartbar tap" id="cartBar">
+    <div class="cart-l"><div class="cart-badge" id="cCnt">0</div><div>カートを確認</div></div>
+    <div class="cart-r">¥<span id="cAmt">0</span> ›</div>
+  </div>
+
+  <div class="veil" id="veil"></div>
+
+  <div class="sheet" id="sh-item">
+    <div class="sh-grab"></div>
+    <div class="sh-head"><h3 id="iName"></h3><button class="sh-x tap" data-close><svg><use href="#i-close"/></svg></button></div>
+    <div class="sh-body">
+      <div id="iOpts"></div>
+      
+      <!-- 在庫警告の表示 -->
+      <div id="iStockWarn" style="color: var(--alert); font-weight: 700; font-size: 13px; margin-bottom: 12px; display: none; background: rgba(255,59,48,0.1); padding: 8px; border-radius: 8px; text-align: center;"></div>
+      
+      <div class="qty-ctrl">
+        <span>数量</span>
+        <div class="q-btns"><button class="q-btn tap" id="qSub">-</button><div class="q-num" id="qVal">1</div><button class="q-btn tap" id="qAdd">+</button></div>
+      </div>
+      <button class="cta tap" id="addBtn">カートに追加 <span id="iTotal">¥0</span></button>
+    </div>
+  </div>
+
+  <div class="sheet" id="sh-cart">
+    <div class="sh-grab"></div>
+    <div class="sh-head"><h3>カート</h3><button class="sh-x tap" data-close><svg><use href="#i-close"/></svg></button></div>
+    <div class="sh-body">
+      <div id="cLines"></div>
+      <div style="display:flex;justify-content:space-between;font-weight:700;font-size:18px;margin:24px 0"><span>合計</span><span id="cSum">¥0</span></div>
+      <button class="cta tap" id="goPay">決済へ進む</button>
+    </div>
+  </div>
+
+  <div class="sheet" id="sh-pay">
+    <div class="sh-grab"></div>
+    <div class="sh-head"><h3>お支払い方法</h3><button class="sh-x tap" data-close><svg><use href="#i-close"/></svg></button></div>
+    <div class="sh-body" style="display:flex;flex-direction:column;gap:16px;">
+      <button class="cta tap" onclick="doOrder('事前決済')">事前決済 (Square)</button>
+      <button class="cta ghost tap" onclick="doOrder('店頭決済')">店頭でお支払い</button>
+    </div>
+  </div>
+
+  <div class="sheet" id="sh-login">
+    <div class="sh-grab"></div>
+    <div class="sh-head"><h3>スタッフログイン</h3><button class="sh-x tap" data-close><svg><use href="#i-close"/></svg></button></div>
+    <div class="sh-body">
+      <input type="password" id="staffPass" class="login-input" placeholder="パスワードを入力してください">
+      <button class="cta tap" onclick="doLogin()">ログイン</button>
+    </div>
+  </div>
+
+  <div id="success">
+    <div class="suc-in">
+      <div class="suc-ic"><div class="steam"><span></span><span></span><span></span></div><svg><use href="#i-cup"/></svg></div>
+      <div class="suc-ti">Thank you!</div>
+      <div class="suc-msg">ご注文ありがとうございます。<br>心を込めてお作りします。</div>
+      <div class="suc-oid" id="sOid"></div>
+    </div>
+  </div>
+</div> <!-- /#app -->
+
+<!-- KDSは別画面として扱うので #app の外に配置 -->
+<div id="kds">
+  <div class="k-hd">
+    <div style="font-weight: 700; font-size: 16px;">KDS / <span id="kdsSyncStatus" style="font-size:12px; color:#888;">Local Mode</span></div>
+    <button class="k-btn gh tap" onclick="exitKds()">閉じる</button>
+  </div>
+  <div class="k-sec">
+    <h2 style="font-size: 13px; color: #888; margin-bottom: 8px;">待ち時間設定</h2>
+    <div class="k-card">
+      <div>現在の設定: <span id="kWait" style="color:#fff; font-weight:bold;">8</span>分</div>
+      <div style="display:flex;gap:8px"><button class="k-btn gh tap" onclick="setWait(-1)">-1</button><button class="k-btn gh tap" onclick="setWait(1)">+1</button></div>
+    </div>
+  </div>
+  <div class="k-sec">
+    <h2 style="font-size: 13px; color: #888; margin-bottom: 8px;">在庫管理</h2>
+    <div id="kStock"></div>
+  </div>
+  <div class="k-sec">
+    <h2 style="font-size: 13px; color: #888; margin-bottom: 8px;">注文リスト</h2>
+    <div id="kOrders"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyALp5cInmwNrxI_rKFZsaPxysjQEvMxXo",
+  authDomain: "bikokenn-cafe.firebaseapp.com",
+  databaseURL: "https://bikokenn-cafe-default-rtdb.firebaseio.com",
+  projectId: "bikokenn-cafe",
+  storageBucket: "bikokenn-cafe.firebasestorage.app",
+  messagingSenderId: "231995673104",
+  appId: "1:231995673104:web:052c85ec85c2c8877bd895",
+  measurementId: "G-SCXRMJCCZS"
+};
+
+const IS_SYNC_READY = firebaseConfig.apiKey !== "YOUR_API_KEY" && firebaseConfig.apiKey !== "";
+let dbRef = null;
+
+if (IS_SYNC_READY) {
+  firebase.initializeApp(firebaseConfig);
+  dbRef = firebase.database().ref('bikoken');
+}
+
+const MENU = [
+  { id: 'm1', name: 'フルーツシロップソーダ', price: 300, img: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?q=80&w=800&auto=format&fit=crop', stock: 20, opts: [{k:'f', q:'フレーバー', req:true, o:['ハイビスカス','カシス']}] },
+  { id: 'm2', name: 'ノンアルコールカシスウーロン', price: 300, stock: 15, img: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?q=80&w=800&auto=format&fit=crop' },
+  { id: 'm3', name: 'アイスコーヒー', price: 300, stock: 30, img: 'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=80&w=800&auto=format&fit=crop' }
+];
+
+let ST = { wait: 8, stk: {}, ord: [] };
+MENU.forEach(m => ST.stk[m.id] = m.stock);
+let CA = [];
+
+const $ = s => document.querySelector(s); const $$ = s => [...document.querySelectorAll(s)];
+function toast(m) { $('#toast').textContent = m; $('#toast').classList.add('on'); setTimeout(()=>$('#toast').classList.remove('on'), 2500); }
+
+if (IS_SYNC_READY) {
+  dbRef.on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      ST.wait = data.wait ?? 8;
+      ST.stk = data.stk || {};
+      
+      if (data.ord) {
+        ST.ord = Object.values(data.ord).sort((a,b) => a.ts - b.ts);
+      } else {
+        ST.ord = [];
+      }
+      
+      rMenu(); rOrd(); rK();
+      
+      $('#syncPill').style.color = "var(--leaf)";
+      $('#syncPill').style.borderColor = "rgba(52,199,89,0.2)";
+      $('#syncPill').style.background = "rgba(52,199,89,0.1)";
+      $('#syncPill').querySelector('.dot').style.background = "var(--leaf)";
+      $('#syncPill').querySelector('.dot').style.animation = "pulseDot 2.5s infinite cubic-bezier(0.25, 1, 0.5, 1)";
+      $('#kdsSyncStatus').textContent = "Live Sync";
+      $('#kdsSyncStatus').style.color = "var(--leaf)";
+    } else {
+      const initialData = { wait: 8, stk: {}, ord: {} };
+      MENU.forEach(m => initialData.stk[m.id] = m.stock);
+      dbRef.set(initialData);
+    }
+  });
+}
+
+// PCの大画面などではスクロールしなくてもヘッダーの色を変える
+let ticking = false;
+window.addEventListener('scroll', () => {
+  if (!ticking) {
+    window.requestAnimationFrame(() => {
+      if (window.scrollY > 30) { $('.header').classList.add('scrolled'); } 
+      else { $('.header').classList.remove('scrolled'); }
+      ticking = false;
+    });
+    ticking = true;
+  }
+});
+
+function rMenu() {
+  $('#menuWrap').innerHTML = MENU.map(m => {
+    const st = ST.stk[m.id] || 0;
+    const out = st <= 0;
+    const wrn = !out && st <= 5 ? `<div class="stock-warn">残りわずか（${st}杯）</div>` : '';
+    return `<button class="item-wrap tap" onclick="opI('${m.id}')" style="${out ? 'opacity:0.5;pointer-events:none' : ''}">
+      <div class="item-img" style="background-image:url('${m.img}')">${out ? '<div class="sold-out">SOLD OUT</div>' : ''}</div>
+      <div class="item-name">${m.name}</div>
+      <div class="item-price">¥${m.price}</div>
+      ${wrn}
+    </button>`;
+  }).join('');
+  $('#hdWait').textContent = ST.wait;
+}
+
+let oSh = null;
+function showSh(s) { if(oSh) oSh.classList.remove('on'); oSh = $(s); oSh.classList.add('on');$('#veil').classList.add('on'); document.body.style.overflow='hidden'; }
+window.cloSh = () => { if(oSh) oSh.classList.remove('on'); $('#veil').classList.remove('on'); document.body.style.overflow=''; oSh=null; };
+$('#veil').addEventListener('click', cloSh); $$('[data-close]').forEach(b=>b.addEventListener('click', cloSh));
+
+let CS = { i: null, q: 1, s: {} };
+window.opI = (id) => {
+  const m = MENU.find(x => x.id === id); if(!m || (ST.stk[m.id]||0)<=0) return;
+  CS = { i: m, q: 1, s: {} };
+  $('#iName').textContent = m.name;
+  
+  // 在庫警告の表示ロジック
+  const st = ST.stk[m.id] || 0;
+  const warnEl = $('#iStockWarn');
+  if (st <= 5 && st > 0) {
+    warnEl.textContent = `残りわずか（${st}杯）`;
+    warnEl.style.display = 'block';
+  } else {
+    warnEl.style.display = 'none';
+  }
+
+  if(m.opts) {
+    $('#iOpts').innerHTML = m.opts.map((g,gi) => `<div class="opt-group"><span class="opt-lbl">${g.q}</span><div class="opts">${g.o.map((o,oi)=>`<button class="opt tap" data-g="${gi}" data-o="${oi}">${o}</button>`).join('')}</div></div>`).join('');
+    $$('.opt').forEach(b => b.addEventListener('click', () => {       const g = m.opts[+b.dataset.g]; CS.s[g.k] = g.o[+b.dataset.o];       $$
+(`.opt[data-g="${b.dataset.g}"]`).forEach(x => x.classList.toggle('sel', x===b));
+      chk();
+    }));
+  } else $('#iOpts').innerHTML = '';
+  uQ(); chk(); showSh('#sh-item');
+};
+
+function uQ() { $('#qVal').textContent = CS.q; $('#iTotal').textContent = `¥${CS.i.price * CS.q}`; const max = Math.min(9, ST.stk[CS.i.id]||0); $('#qSub').disabled = CS.q<=1; $('#qAdd').disabled = CS.q>=max; }
+$('#qSub').addEventListener('click', ()=>{ if(CS.q>1){CS.q--;uQ();} });
+$('#qAdd').addEventListener('click', ()=>{ const max = Math.min(9, ST.stk[CS.i.id]||0); if(CS.q<max){CS.q++;uQ();} });
+function chk() { const m = !CS.i.opts ? false : CS.i.opts.some(g => g.req && !CS.s[g.k]); $('#addBtn').classList.toggle('disabled', m); }
+
+$('#addBtn').addEventListener('click', ()=>{
+  CA.push({ id: CS.i.id, nm: CS.i.name, pr: CS.i.price, q: CS.q, sp: Object.values(CS.s).join(' / ') });
+  uC(); cloSh(); toast('カートに追加しました');
+});
+
+function uC() {
+  const n = CA.reduce((a,c)=>a+c.q,0); const amt = CA.reduce((a,c)=>a+(c.pr*c.q),0);
+  if(n>0) { $('#cartBar').classList.add('show'); $('#cCnt').textContent = n; $('#cAmt').textContent = amt; }
+  else $('#cartBar').classList.remove('show');
+}
+
+$('#cartBar').addEventListener('click', ()=>{
+  if(!CA.length) return;
+  $('#cLines').innerHTML = CA.map((c,i)=>`<div style="display:flex;justify-content:space-between;padding:16px 0;border-bottom:1px dashed #e5e5ea"><div><b>${c.nm}</b> <span style="color:#888;font-size:12px">×${c.q}</span><br><span style="font-size:11px;color:#888">${c.sp}</span></div><div style="display:flex;gap:16px;align-items:center"><b>¥${c.pr*c.q}</b><button class="tap" style="color:#f33;font-size:12px;font-weight:700" onclick="rm(${i})">削除</button></div></div>`).join('');
+  $('#cSum').textContent = `¥${CA.reduce((a,c)=>a+(c.pr*c.q),0)}`; showSh('#sh-cart');
+});
+window.rm = (i) => { CA.splice(i,1); uC(); if(!CA.length) cloSh(); else $('#cartBar').click(); };
+$('#goPay').addEventListener('click', ()=>{ cloSh(); setTimeout(()=>showSh('#sh-pay'), 300); });
+
+window.doOrder = (md) => {
+  for(const c of CA) if((ST.stk[c.id]||0)<c.q) { toast(`${c.nm} の在庫が不足しています`); cloSh(); return; }
+  
+  const oid = 'BIKO-' + Math.floor(1000+Math.random()*9000);
+  const oData = { id: oid, md: md, tm: new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}), it: [...CA], st: 'new', ts: Date.now() };
+
+  // Square事前決済の場合、今は一旦「店頭決済」と同じ動きをさせます（後でVercelと繋ぐため）
+  if (md === '事前決済') {
+    // 将来的にはここでVercelのSquare決済サーバーに通信します
+    // 今は仮で通します
+  }
+
+  if (IS_SYNC_READY) {
+    CA.forEach(c => {
+      const cur = ST.stk[c.id] || 0;
+      dbRef.child('stk/' + c.id).set(cur - c.q);
+    });
+    dbRef.child('ord/' + oid).set(oData);
+  } else {
+    for(const c of CA) ST.stk[c.id] -= c.q;
+    ST.ord.push(oData);
+    rMenu(); rOrd(); rK();
+  }
+
+  CA = []; uC(); cloSh();
+  
+  $('#sOid').textContent = oid; $('#success').classList.add('on');
+  setTimeout(()=>{
+    $('#success').classList.remove('on');
+    $$('.tab').forEach(x=>x.classList.toggle('on', x.dataset.tab==='orders'));$$
+('.pane').forEach(p=>p.classList.toggle('on', p.id==='p-orders'));
+    window.scrollTo(0,0);
+  }, 2800);
+};
+
+function rOrd() {
+  const ar = $('#orderWrap');
+  if(!ST.ord.length) { ar.innerHTML = '<div style="text-align:center;padding:40px 0;color:#888">注文はありません</div>'; return; }
+  ar.innerHTML = [...ST.ord].reverse().map(o => {
+    const isP = o.st==='prep'||o.st==='done', isD = o.st==='done';
+    const w = isD?'100%':(isP?'50%':'0%');
+    return `<div class="trk-wrap"><div class="trk-head"><div class="trk-ti"><div class="pulse" style="${isD?'animation:none;background:#888':''}"></div>${isD?'お渡し準備完了':(isP?'調理中':'受付完了')}</div><div class="trk-id">${o.id}</div></div>
+    <div class="trk"><div class="trk-fill" style="width:${w}"></div>
+    <div class="trk-step act"><div class="trk-dot"><svg><use href="#i-check"/></svg></div>受付</div>
+    <div class="trk-step ${isP?'act':''}"><div class="trk-dot"><svg><use href="#i-check"/></svg></div>調理中</div>
+    <div class="trk-step ${isD?'act':''}"><div class="trk-dot"><svg><use href="#i-check"/></svg></div>受取可</div></div>
+    <div class="trk-items">${o.it.map(c=>`${c.nm}${c.sp?'('+c.sp+')':''} <span style="color:#888;font-size:12px;font-weight:400">×${c.q}</span>`).join('<br>')}</div></div>`;
+  }).join('');
+}
+
+$$('.tab').forEach(t=>t.addEventListener('click', ()=>{
+  $$('.tab').forEach(x=>x.classList.toggle('on', x===t));$$
+('.pane').forEach(p=>p.classList.toggle('on', p.id===`p-${t.dataset.tab}`));
+  window.scrollTo(0,0);
+}));
+
+let tC = 0, tT;
+$('#logoTap').addEventListener('click', (e)=>{
+  e.preventDefault(); tC++; clearTimeout(tT); tT = setTimeout(()=>tC=0, 800);
+  if(tC>=3) { tC=0; $('#staffPass').value = ''; showSh('#sh-login'); }
+});
+
+window.doLogin = () => {
+  if($('#staffPass').value === '1234') { 
+    cloSh(); $('#app').style.display='none'; document.body.style.backgroundColor='#000'; $('#kds').classList.add('on'); rK(); 
+  } else toast("パスワードが違います");
+};
+
+window.exitKds = ()=>{ $('#kds').classList.remove('on'); document.body.style.backgroundColor='#f5f5f7'; $('#app').style.display='block'; rMenu(); };
+
+window.setWait = (d)=>{
+  const nW = Math.max(0, ST.wait + d);
+  if (IS_SYNC_READY) dbRef.child('wait').set(nW);
+  else { ST.wait = nW; $('#kWait').textContent=ST.wait; $('#hdWait').textContent=ST.wait; toast(`${ST.wait}min`); }
+};
+
+window.cStk = (id,d)=>{
+  const nS = Math.max(0,(ST.stk[id]||0)+d);
+  if (IS_SYNC_READY) dbRef.child('stk/' + id).set(nS);
+  else { ST.stk[id]=nS; rK(); }
+};
+
+// KDSのステータス進行（戻す機能を追加）
+window.adv = (i, reverse = false) => {
+  const o = ST.ord[i];
+  let nSt = o.st;
+  
+  if (reverse) {
+    if (o.st === 'done') nSt = 'prep';
+    else if (o.st === 'prep') nSt = 'new';
+  } else {
+    if (o.st === 'new') nSt = 'prep';
+    else if (o.st === 'prep') nSt = 'done';
+  }
+
+  if (nSt === o.st) return;
+
+  if (IS_SYNC_READY) {
+    dbRef.child('ord/' + o.id + '/st').set(nSt);
+  } else {
+    o.st = nSt;
+    rK();
+    rOrd();
+  }
+};
+
+function rK() {
+  $('#kWait').textContent = ST.wait;
+  $('#kStock').innerHTML = MENU.map(m => `<div class="k-card"><div><b>${m.name}</b></div><div style="display:flex;gap:12px;align-items:center"><button class="k-btn gh tap" onclick="cStk('${m.id}',-1)">-</button><span style="font-size:16px;font-weight:700;width:24px;text-align:center">${ST.stk[m.id]||0}</span><button class="k-btn gh tap" onclick="cStk('${m.id}',1)">+</button></div></div>`).join('');
+  
+  const ao = ST.ord.map((o,i)=>({...o,i})).sort((a,b) => b.ts - a.ts);
+  
+  $('#kOrders').innerHTML = ao.length ? ao.map(o => {
+    const isDone = o.st === 'done';
+    const isNew = o.st === 'new';
+    const btnText = isNew ? '調理開始' : (o.st === 'prep' ? '完了' : '完了済');
+    
+    return `<div class="k-card" style="align-items:flex-start; ${isDone ? 'opacity:0.6;' : ''}">
+      <div style="flex:1">
+        <div style="font-size:12px;color:#888">${o.id} / ${o.md} / ${o.tm}</div>
+        <div style="margin-top:8px;font-weight:700;line-height:1.6">${o.it.map(c=>`${c.nm} ${c.sp?'('+c.sp+')':''} x${c.q}`).join('<br>')}</div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <button class="k-btn tap" onclick="adv(${o.i})" ${isDone ? 'disabled style="background:#555;color:#888;"' : ''}>${btnText}</button>
+        ${!isNew ? `<button class="k-btn gh tap" onclick="adv(${o.i}, true)" style="font-size:11px; padding:4px 8px;">↩ 戻す</button>` : ''}
+      </div>
+    </div>`;
+  }).join('') : '<div style="color:#888;text-align:center;padding:20px">No Orders</div>';
+}
+
+window.addEventListener('load', ()=>{ 
+  if(!IS_SYNC_READY) { rMenu(); rOrd(); }
+  setTimeout(()=>$('#splash').classList.add('hidden'), 1500); 
+});
+</script>
+</body>
+</html>
