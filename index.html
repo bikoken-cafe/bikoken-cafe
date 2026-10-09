@@ -223,6 +223,11 @@ a { color: inherit; text-decoration: none; }
   </div>
 
   <section class="pane on" id="p-menu">
+    <!-- ▼ オーダーストップ時の警告バナー -->
+    <div id="stop-banner" style="display:none; margin: 16px 20px; background: rgba(255,59,48,0.1); color: var(--alert); border: 1px solid rgba(255,59,48,0.3); border-radius: 8px; padding: 12px; text-align: center; font-weight: 700; font-size: 13px;">
+      ⚠️ ただいま混雑のため一時的に注文受付を停止しております
+    </div>
+    
     <div class="hero">
       <div class="hero-cover"></div>
       <div class="hero-title">Gastronomy &amp; Coffee</div>
@@ -289,10 +294,16 @@ a { color: inherit; text-decoration: none; }
     <div class="sh-head"><h3>お支払い方法</h3><button class="sh-x tap" data-close><svg><use href="#i-close"/></svg></button></div>
     <div class="sh-body">
       <div id="pay-methods" style="display:flex;flex-direction:column;gap:16px;">
-        <button class="cta tap" onclick="showSquareForm()">クレジットカード (事前決済)</button>
+        <button class="cta tap" onclick="showSquareForm()">クレジットカード / Apple Pay (事前決済)</button>
         <button class="cta ghost tap" onclick="doOrder('店頭決済')">店頭でお支払い</button>
       </div>
       <div id="payment-form">
+        <!-- ▼ Apple Pay ボタン用のコンテナ -->
+        <div id="apple-pay-container" style="display:none; margin-bottom:16px;">
+          <div id="apple-pay-button" style="height:48px;"></div>
+          <div style="text-align:center; font-size:12px; color:var(--ink-sub); margin-top:16px;">またはクレジットカードで入力</div>
+        </div>
+
         <div class="secure-notice">
           <div>ご入力いただくクレジットカード情報は、決済代行会社(Square)によって暗号化され安全に処理されます。当サイトがカード情報を取得・保持することは一切ありません。</div>
         </div>
@@ -324,7 +335,11 @@ a { color: inherit; text-decoration: none; }
 <div id="kds">
   <div class="k-hd">
     <div style="font-weight: 700; font-size: 16px;">KDS / <span id="kdsSyncStatus" style="font-size:12px; color:#888;">Local Mode</span></div>
-    <button class="k-btn gh tap" onclick="exitKds()">閉じる</button>
+    <div style="display:flex; gap:12px; align-items:center;">
+      <!-- ▼ オーダーストップ用トグルボタン -->
+      <button class="k-btn gh tap" id="kdsToggleBtn" onclick="toggleAccepting()" style="border-color:var(--leaf); color:var(--leaf);">🟢 注文受付中</button>
+      <button class="k-btn gh tap" onclick="exitKds()">閉じる</button>
+    </div>
   </div>
   <div class="k-sec">
     <h2 style="font-size: 13px; color: #888; margin-bottom: 8px;">待ち時間設定</h2>
@@ -376,13 +391,14 @@ const MENU = [
   { id: 'm3', name: 'アイスコーヒー', price: 300, stock: 30, img: 'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=80&w=800&auto=format&fit=crop' }
 ];
 
-let ST = { wait: 8, stk: {}, ord: [] };
+let ST = { wait: 8, stk: {}, ord: [], isAccepting: true };
 MENU.forEach(m => ST.stk[m.id] = m.stock);
 let CA = [];
 let myOrders = [];
 let hiddenOrders = [];
 
-const $ = s => document.querySelector(s); const $$ = s => [...document.querySelectorAll(s)];
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
 function toast(m) { $('#toast').textContent = m; $('#toast').classList.add('on'); setTimeout(()=>$('#toast').classList.remove('on'), 2500); }
 
 if (IS_SYNC_READY) {
@@ -391,12 +407,13 @@ if (IS_SYNC_READY) {
     if (data) {
       ST.wait = data.wait ?? 8;
       ST.stk = data.stk || {};
+      ST.isAccepting = data.isAcceptingOrders ?? true;
       if (data.ord) {
         ST.ord = Object.values(data.ord).sort((a,b) => a.ts - b.ts);
       } else {
         ST.ord = [];
       }
-      rMenu(); rOrd(); rK();
+      rMenu(); rOrd(); rK(); updateAcceptingUI();
       
       $('#syncPill').style.color = "var(--leaf)";
       $('#syncPill').style.borderColor = "rgba(52,199,89,0.2)";
@@ -406,12 +423,48 @@ if (IS_SYNC_READY) {
       $('#kdsSyncStatus').textContent = "Live Sync";
       $('#kdsSyncStatus').style.color = "var(--leaf)";
     } else {
-      const initialData = { wait: 8, stk: {}, ord: {} };
+      const initialData = { wait: 8, stk: {}, ord: {}, isAcceptingOrders: true };
       MENU.forEach(m => initialData.stk[m.id] = m.stock);
       dbRef.set(initialData);
     }
   });
 }
+
+function updateAcceptingUI() {
+  const banner = $('#stop-banner');
+  const addBtn = $('#addBtn');
+  const goPay = $('#goPay');
+  const kToggle = $('#kdsToggleBtn');
+
+  if (!ST.isAccepting) {
+    if (banner) banner.style.display = 'block';
+    if (addBtn) { addBtn.classList.add('disabled'); addBtn.textContent = '受付停止中'; }
+    if (goPay) { goPay.classList.add('disabled'); goPay.textContent = '受付停止中'; }
+    if (kToggle) {
+      kToggle.textContent = '🔴 受付停止中';
+      kToggle.style.color = 'var(--alert)';
+      kToggle.style.borderColor = 'var(--alert)';
+    }
+  } else {
+    if (banner) banner.style.display = 'none';
+    if (addBtn) { 
+      addBtn.classList.remove('disabled'); 
+      if (CS && CS.i) { uQ(); } else { addBtn.innerHTML = 'カートに追加 <span id="iTotal">¥0</span>'; }
+    }
+    if (goPay) { goPay.classList.remove('disabled'); goPay.textContent = '決済へ進む'; }
+    if (kToggle) {
+      kToggle.textContent = '🟢 注文受付中';
+      kToggle.style.color = 'var(--leaf)';
+      kToggle.style.borderColor = 'var(--leaf)';
+    }
+  }
+}
+
+window.toggleAccepting = () => {
+  const nSt = !ST.isAccepting;
+  if (IS_SYNC_READY) dbRef.child('isAcceptingOrders').set(nSt);
+  else { ST.isAccepting = nSt; updateAcceptingUI(); }
+};
 
 let ticking = false;
 window.addEventListener('scroll', () => {
@@ -454,6 +507,7 @@ $('#veil').addEventListener('click', cloSh); $$('[data-close]').forEach(b=>b.add
 
 let CS = { i: null, q: 1, s: {} };
 window.opI = (id) => {
+  if (!ST.isAccepting) { toast('現在注文受付を停止しています'); return; }
   const m = MENU.find(x => x.id === id); if(!m || (ST.stk[m.id]||0)<=0) return;
   CS = { i: m, q: 1, s: {} };
   $('#iName').textContent = m.name;
@@ -501,13 +555,27 @@ $('#cartBar').addEventListener('click', ()=>{
 window.rm = (i) => { CA.splice(i,1); uC(); if(!CA.length) cloSh(); else $('#cartBar').click(); };
 $('#goPay').addEventListener('click', ()=>{ cloSh(); setTimeout(()=>showSh('#sh-pay'), 300); });
 
-let payments, card;
+let payments, card, applePay, paymentRequest;
 async function initSquare() {
   if (!window.Square) return;
   try {
     payments = window.Square.payments(SQUARE_APP_ID, SQUARE_LOCATION_ID);
     card = await payments.card();
     await card.attach('#card-container');
+
+    paymentRequest = payments.paymentRequest({
+      countryCode: 'JP',
+      currency: 'JPY',
+      total: { amount: '300', label: 'BIKOKEN Cafe' } // 金額は決済直前にアップデートされます
+    });
+
+    try {
+      applePay = await payments.applePay(paymentRequest);
+      await applePay.attach('#apple-pay-button');
+      $('#apple-pay-container').style.display = 'block'; // iPhone等のみ表示
+    } catch(e) {
+      console.log('Apple Pay非対応環境です');
+    }
   } catch (e) {
     console.error(e);
   }
@@ -516,12 +584,19 @@ async function initSquare() {
 window.showSquareForm = () => {
   $('#pay-methods').style.display = 'none';
   $('#payment-form').classList.add('on');
+  
+  if (paymentRequest) {
+    const amt = CA.reduce((a,c)=>a+(c.pr*c.q),0);
+    paymentRequest.update({
+      total: { amount: amt.toString(), label: 'BIKOKEN Cafe' }
+    });
+  }
 };
 
 $('#card-button').addEventListener('click', async (event) => {
   event.preventDefault();
   if (!card) return;
-  
+  if (!ST.isAccepting) { toast('現在注文受付を停止しています'); return; }
   for(const c of CA) if((ST.stk[c.id]||0)<c.q) { toast(`${c.nm} の在庫が不足しています`); return; }
 
   const btn = $('#card-button');
@@ -531,22 +606,7 @@ $('#card-button').addEventListener('click', async (event) => {
   try {
     const result = await card.tokenize();
     if (result.status === 'OK') {
-      const amt = CA.reduce((a,c)=>a+(c.pr*c.q),0);
-      const response = await fetch('/api/payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sourceId: result.token,
-          amount: amt
-        })
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        doOrder('事前決済');
-      } else {
-        toast("決済に失敗しました");
-      }
+      await processPaymentToken(result.token);
     } else {
       toast("カード情報が正しくありません");
     }
@@ -559,7 +619,45 @@ $('#card-button').addEventListener('click', async (event) => {
   }
 });
 
+// Apple Payボタン用のイベントリスナー
+document.getElementById('apple-pay-button').addEventListener('click', async (event) => {
+  event.preventDefault();
+  if (!ST.isAccepting) { toast('現在注文受付を停止しています'); return; }
+  for(const c of CA) if((ST.stk[c.id]||0)<c.q) { toast(`${c.nm} の在庫が不足しています`); return; }
+
+  try {
+    const result = await applePay.tokenize();
+    if (result.status === 'OK') {
+      await processPaymentToken(result.token);
+    }
+  } catch (e) {
+    console.error(e);
+    toast("Apple Pay決済中にエラーが発生しました");
+  }
+});
+
+async function processPaymentToken(token) {
+  // セキュリティ対策: 金額は送らず、商品のIDと個数だけを送る
+  const secureCartData = CA.map(c => ({ id: c.id, q: c.q }));
+  const response = await fetch('/api/payment', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      sourceId: token,
+      cartItems: secureCartData
+    })
+  });
+
+  const data = await response.json();
+  if (data.success) {
+    doOrder('事前決済');
+  } else {
+    toast("決済に失敗しました");
+  }
+}
+
 window.doOrder = (md) => {
+  if (!ST.isAccepting) { toast('現在注文受付を停止しています'); cloSh(); return; }
   for(const c of CA) if((ST.stk[c.id]||0)<c.q) { toast(`${c.nm} の在庫が不足しています`); cloSh(); return; }
   
   const oid = 'BIKO-' + Math.floor(1000+Math.random()*9000);
