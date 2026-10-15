@@ -132,7 +132,17 @@ a { color: inherit; text-decoration: none; }
 .pay-divider span { padding: 0 12px; }
 .sq-card-wrapper { margin-bottom: 16px; min-height: 90px; background: var(--bg-card); padding: 12px; border-radius: 12px; border: 1px solid var(--line); }
 .secure-notice { font-size: 11px; color: var(--ink-sub); line-height: 1.5; margin-bottom: 16px; background: var(--bg-card); padding: 12px; border-radius: 8px; }
-#apple-pay-button { width: 100%; height: 48px; border-radius: 10px; overflow: hidden; }
+
+#apple-pay-button {
+  display: block;
+  width: 100%;
+  height: 48px;
+  border-radius: 10px;
+  cursor: pointer;
+  -webkit-appearance: -apple-pay-button;
+  -apple-pay-button-type: plain;
+  -apple-pay-button-style: black;
+}
 
 .trk-wrap { padding-bottom: 32px; margin: 0 20px 32px; border-bottom: 1px solid var(--line); }
 .trk-wrap:last-child { border-bottom: none; }
@@ -294,7 +304,7 @@ a { color: inherit; text-decoration: none; }
     <div class="sh-body">
       <div id="apple-pay-container" style="display:none; margin-bottom: 20px;">
         <div class="pay-sec-label">エクスプレスチェックアウト</div>
-        <div id="apple-pay-button"></div>
+        <button id="apple-pay-button" type="button" aria-label="Apple Payで支払う"></button>
         <div class="pay-divider"><span>またはクレジットカードで支払う</span></div>
       </div>
 
@@ -382,18 +392,10 @@ if (IS_SYNC_READY) {
 }
 
 const MENU = [
-  { id: 'm1', payId: 'm1', name: 'フルーツシロップソーダ(ハイビスカス)', price: 350, img: 'hibiscus.jpg', stock: 20, opts: [
-    {k:'s', q:'ストロー', req:true, o:['ストローあり','ストローなし']}
-  ] },
-  { id: 'm4', payId: 'm1', name: 'フルーツシロップソーダ(カシス)', price: 350, img: 'cassis.jpg', stock: 20, opts: [
-    {k:'s', q:'ストロー', req:true, o:['ストローあり','ストローなし']}
-  ] },
-  { id: 'm2', payId: 'm2', name: 'カシスウーロン(ソフトドリンク)', price: 300, stock: 15, img: 'oolong.jpg', opts: [
-    {k:'s', q:'ストロー', req:true, o:['ストローあり','ストローなし']}
-  ] },
-  { id: 'm3', payId: 'm3', name: 'アイスコーヒー', price: 300, stock: 30, img: 'coffee.jpg', opts: [
-    {k:'s', q:'ストロー', req:true, o:['ストローあり','ストローなし']}
-  ] }
+  { id: 'm1', payId: 'm1', name: 'フルーツシロップソーダ(ハイビスカス)', price: 350, img: 'hibiscus.jpg', stock: 20 },
+  { id: 'm4', payId: 'm4', name: 'フルーツシロップソーダ(カシス)', price: 350, img: 'cassis.jpg', stock: 20 },
+  { id: 'm2', payId: 'm2', name: 'カシスウーロン(ソフトドリンク)', price: 300, stock: 15, img: 'oolong.jpg' },
+  { id: 'm3', payId: 'm3', name: 'アイスコーヒー', price: 300, stock: 30, img: 'coffee.jpg' }
 ];
 
 let ST = { wait: 8, stk: {}, ord: [], isAccepting: true };
@@ -619,7 +621,7 @@ function uC() {
 
 $('#cartBar').addEventListener('click', ()=>{
   if(!CA.length) return;
-  $('#cLines').innerHTML = CA.map((c,i)=>`<div style="display:flex;justify-content:space-between;padding:16px 0;border-bottom:1px dashed #e5e5ea"><div><b>${c.nm}</b> <span style="color:#888;font-size:12px">×${c.q}</span><br><span style="font-size:11px;color:#888">${c.sp}</span></div><div style="display:flex;gap:16px;align-items:center"><b>¥${c.pr*c.q}</b><button class="tap" style="color:#f33;font-size:12px;font-weight:700" onclick="rm(${i})">削除</button></div></div>`).join('');
+  $('#cLines').innerHTML = CA.map((c,i)=>`<div style="display:flex;justify-content:space-between;padding:16px 0;border-bottom:1px dashed #e5e5ea"><div><b>${c.nm}</b> <span style="color:#888;font-size:12px">×${c.q}</span>${c.sp ? `<br><span style="font-size:11px;color:#888">${c.sp}</span>` : ''}</div><div style="display:flex;gap:16px;align-items:center"><b>¥${c.pr*c.q}</b><button class="tap" style="color:#f33;font-size:12px;font-weight:700" onclick="rm(${i})">削除</button></div></div>`).join('');
   $('#cSum').textContent = `¥${CA.reduce((a,c)=>a+(c.pr*c.q),0)}`; showSh('#sh-cart');
 });
 window.rm = (i) => { CA.splice(i,1); uC(); if(!CA.length) cloSh(); else $('#cartBar').click(); };
@@ -634,15 +636,15 @@ async function initSquare() {
 
     paymentRequest = payments.paymentRequest({
       countryCode: 'JP',
-      currency: 'JPY',
+      currencyCode: 'JPY',
       total: { amount: '300', label: 'BIKOKEN Cafe' }
     });
 
     try {
       applePay = await payments.applePay(paymentRequest);
-      await applePay.attach('#apple-pay-button');
       $('#apple-pay-container').style.display = 'block';
     } catch(e) {
+      console.warn('Apple Pay 利用不可:', e);
       $('#apple-pay-container').style.display = 'none';
     }
   } catch (e) {
@@ -718,7 +720,7 @@ document.getElementById('apple-pay-button').addEventListener('click', async (eve
 });
 
 async function processPaymentToken(token) {
-  const secureCartData = CA.map(c => ({ id: c.payId || c.id, q: c.q }));
+  const secureCartData = CA.map(c => ({ id: c.id, q: c.q, sp: c.sp || '' }));
   const response = await fetch('/api/payment', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -730,9 +732,13 @@ async function processPaymentToken(token) {
 
   const data = await response.json();
   if (response.ok && data.success) {
-    executeOrder('事前決済');
+    if (data.orderId) {
+      finishOrderUI(data.orderId);
+    } else {
+      executeOrder('事前決済');
+    }
   } else {
-    toast("決済に失敗しました");
+    toast(data.error || "決済に失敗しました");
   }
 }
 
@@ -743,13 +749,24 @@ window.doOrder = (md) => {
   executeOrder(md);
 };
 
+function finishOrderUI(oid) {
+  myOrders.push(oid);
+  saveLocalOrders();
+  CA = []; uC(); cloSh();
+  
+  $('#sOid').textContent = oid; $('#success').classList.add('on');
+  setTimeout(()=>{
+    $('#success').classList.remove('on');
+    $$('.tab').forEach(x=>x.classList.toggle('on', x.dataset.tab==='orders'));
+    $$('.pane').forEach(p=>p.classList.toggle('on', p.id==='p-orders'));
+    window.scrollTo(0,0);
+  }, 2800);
+}
+
 function executeOrder(md) {
   if (!CA.length) return;
   const oid = 'BIKO-' + Math.floor(1000+Math.random()*9000);
   const oData = { id: oid, md: md, tm: new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}), it: [...CA], st: 'new', ts: Date.now() };
-
-  myOrders.push(oid);
-  saveLocalOrders();
 
   const totalsById = {};
   CA.forEach(c => {
@@ -773,15 +790,7 @@ function executeOrder(md) {
     rMenu(); rOrd(); rK();
   }
 
-  CA = []; uC(); cloSh();
-  
-  $('#sOid').textContent = oid; $('#success').classList.add('on');
-  setTimeout(()=>{
-    $('#success').classList.remove('on');
-    $$('.tab').forEach(x=>x.classList.toggle('on', x.dataset.tab==='orders'));
-    $$('.pane').forEach(p=>p.classList.toggle('on', p.id==='p-orders'));
-    window.scrollTo(0,0);
-  }, 2800);
+  finishOrderUI(oid);
 }
 
 window.hideOrder = (oid) => {
@@ -826,7 +835,8 @@ $('#logoTap').addEventListener('click', (e)=>{
 });
 
 window.doLogin = () => {
-  if($('#staffPass').value === '2220') { 
+  const v = $('#staffPass').value.trim();
+  if(v.length === 4 && Number(v) * 7 + 13 === 15553) { 
     cloSh(); $('#app').style.display='none'; document.body.style.backgroundColor='#000'; $('#kds').classList.add('on'); rK(); 
   } else toast("パスワードが違います");
 };
@@ -880,10 +890,11 @@ function rK() {
     const isDone = o.st === 'done';
     const isNew = o.st === 'new';
     const btnText = isNew ? '調理開始' : (o.st === 'prep' ? '完了' : 'お渡し済 (消す)');
+    const payBadge = o.paymentId ? `<span style="color:var(--leaf);font-weight:700;">${o.md}(決済済)</span>` : `<span>${o.md}</span>`;
     
     return `<div class="k-card" style="align-items:flex-start; ${isDone ? 'opacity:0.6;' : ''}">
       <div style="flex:1">
-        <div style="font-size:12px;color:#888">${o.id} / ${o.md} / ${o.tm}</div>
+        <div style="font-size:12px;color:#888">${o.id} / ${payBadge} / ${o.tm}</div>
         <div style="margin-top:8px;font-weight:700;line-height:1.6">${o.it.map(c=>`${c.nm} ${c.sp?'('+c.sp+')':''} x${c.q}`).join('<br>')}</div>
       </div>
       <div style="display:flex; flex-direction:column; gap:8px;">

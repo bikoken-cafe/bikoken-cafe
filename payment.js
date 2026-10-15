@@ -1,11 +1,13 @@
-const crypto = require('crypto');
+import { randomUUID } from 'crypto';
 
-const MENU_PRICES = {
-  'm1': 350, // フルーツシロップソーダ(ハイビスカス)
-  'm4': 350, // フルーツシロップソーダ(カシス)
-  'm2': 300, // カシスウーロン(ソフトドリンク)
-  'm3': 300  // アイスコーヒー
+const MENU_MASTER = {
+  'm1': { name: 'フルーツシロップソーダ(ハイビスカス)', price: 350, stock: 20 },
+  'm4': { name: 'フルーツシロップソーダ(カシス)', price: 350, stock: 20 },
+  'm2': { name: 'カシスウーロン(ソフトドリンク)', price: 300, stock: 15 },
+  'm3': { name: 'アイスコーヒー', price: 300, stock: 30 }
 };
+
+const FIREBASE_DB_URL = 'https://bikokenn-cafe-default-rtdb.firebaseio.com/bikoken';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -24,14 +26,25 @@ export default async function handler(req, res) {
     }
 
     let secureTotalAmount = 0;
+    const verifiedItems = [];
+    const totalsById = {};
+
     for (const item of cartItems) {
-      const truePrice = MENU_PRICES[item.id];
+      const master = MENU_MASTER[item.id];
       const qty = Number(item.q);
 
-      if (!truePrice || !Number.isInteger(qty) || qty < 1 || qty > 20) {
+      if (!master || !Number.isInteger(qty) || qty < 1 || qty > 20) {
         return res.status(400).json({ error: '無効な商品または数量が含まれています' });
       }
-      secureTotalAmount += (truePrice * qty);
+      secureTotalAmount += (master.price * qty);
+      totalsById[item.id] = (totalsById[item.id] || 0) + qty;
+      verifiedItems.push({
+        id: item.id,
+        nm: master.name,
+        pr: master.price,
+        q: qty,
+        sp: typeof item.sp === 'string' ? item.sp.slice(0, 50) : ''
+      });
     }
 
     if (secureTotalAmount <= 0 || secureTotalAmount > 50000) {
@@ -42,10 +55,10 @@ export default async function handler(req, res) {
     const locationId = process.env.SQUARE_LOCATION_ID;
 
     if (!accessToken || !locationId) {
-      throw new Error('Squareの認証情報が設定されていません');
+      return res.status(500).json({ error: 'サーバーのSquare認証情報が未設定です' });
     }
 
-    // 本番環境（Production）のSquare URLへ送信
+    // 1. 本番環境（Production）のSquareへ決済リクエスト
     const response = await fetch('https://connect.squareup.com/v2/payments', {
       method: 'POST',
       headers: {
@@ -54,7 +67,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         source_id: sourceId,
-        idempotency_key: crypto.randomUUID(), 
+        idempotency_key: randomUUID(),
         amount_money: {
           amount: secureTotalAmount,
           currency: 'JPY',
@@ -67,10 +80,47 @@ export default async function handler(req, res) {
 
     if (!response.ok) {
       console.error('Square API Error:', data);
-      return res.status(response.status).json({ error: '決済処理が承認されませんでした' });
+      return res.status(response.status).json({ error: '決済が承認されませんでした' });
     }
 
-    return res.status(200).json({ success: true, payment: data.payment });
+    // 2. 決済成功と同時に、サーバーから直接Firebaseへ注文と在庫減算を書き込む
+    const oid = 'BIKO-' + Math.floor(1000 + Math.random() * 9000);
+    const jstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
+    const tm = String(jstNow.getUTCHours()).padStart(2, '0') + ':' + String(jstNow.getUTCMinutes()).padStart(2, '0');
+
+    const orderData = {
+      id: oid,
+      md: '事前決済',
+      paymentId: data.payment.id,
+      tm: tm,
+      it: verifiedItems,
+      st: 'new',
+      ts: Date.now()
+    };
+
+    try {
+      await fetch(`${FIREBASE_DB_URL}/ord/${oid}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData)
+      });
+
+      const stkRes = await fetch(`${FIREBASE_DB_URL}/stk.json`);
+      const currentStk = stkRes.ok ? ((await stkRes.json()) || {}) : {};
+      for (const [id, deductQty] of Object.entries(totalsById)) {
+        const cur = currentStk[id] ?? MENU_MASTER[id].stock;
+        await fetch(`${FIREBASE_DB_URL}/stk/${id}.json`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(Math.max(0, cur - deductQty))
+        });
+      }
+    } catch (fbErr) {
+      console.error('Firebase Sync Error:', fbErr);
+      return res.status(200).json({ success: true, payment: data.payment });
+    }
+
+    return res.status(200).json({ success: true, orderId: oid, payment: data.payment });
 
   } catch (error) {
     console.error('Server Error:', error);
