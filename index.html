@@ -14,23 +14,24 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
-<script src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
+<script src="https://web.squarecdn.com/v1/square.js"></script>
 
 <style>
 :root {
   --ink: #1C1C1E; --ink-sub: #8E8E93; --bg: #FFFFFF; --bg-card: #F2F2F7;
   --brand: #5A8B9C; --leaf: #34C759; --alert: #FF3B30; --line: #E5E5EA;
-  --tabbar-h: 70px; --safe-bottom: env(safe-area-inset-bottom, 20px);
+  --tabbar-h: 70px; --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 20px);
   --font-serif-en: 'Cormorant Garamond', serif; --font-serif-jp: 'Shippori Mincho', serif; --font-sans: 'Inter', 'Noto Sans JP', sans-serif;
   --ease: cubic-bezier(0.25, 1, 0.5, 1);
   --max-w: 600px;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-html { background-color: var(--bg); }
-body { 
-  font-family: var(--font-sans); color: var(--ink); background: var(--bg); 
-  font-size: 15px; line-height: 1.6; min-height: 100vh; 
+html, body { 
+  background-color: var(--bg);
+  font-family: var(--font-sans); color: var(--ink); 
+  font-size: 15px; line-height: 1.6; min-height: 100vh;
+  overscroll-behavior-y: none;
 }
 
 #app {
@@ -40,6 +41,7 @@ body {
   min-height: 100vh;
   box-shadow: 0 0 40px rgba(0,0,0,0.05);
   position: relative;
+  padding-top: calc(var(--safe-top) + 52px);
   padding-bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 120px);
 }
 
@@ -58,7 +60,7 @@ a { color: inherit; text-decoration: none; }
 .splash-sub { font-size: 10px; color: var(--ink-sub); letter-spacing: 0.25em; text-transform: uppercase; margin-top: 12px; font-weight: 600; opacity: 0; transform: translateY(10px); animation: splashFade 2s var(--ease) 0.2s forwards; }
 @keyframes splashFade { 20% { opacity: 1; transform: translateY(0); } 80% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-5px); } }
 
-.header { position: sticky; top: 0; z-index: 50; padding-top: env(safe-area-inset-top); background: rgba(255,255,255,0.85); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-bottom: 0.5px solid transparent; transition: border-color 0.3s; }
+.header { position: fixed; top: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: var(--max-w); z-index: 50; padding-top: var(--safe-top); background: rgba(255,255,255,0.92); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-bottom: 0.5px solid transparent; transition: border-color 0.3s; }
 .header.scrolled { border-bottom-color: var(--line); }
 .header-in { display: flex; align-items: center; justify-content: space-between; height: 52px; padding: 0 20px; }
 .header-logo { cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; padding: 4px 0; touch-action: manipulation; }
@@ -70,16 +72,15 @@ a { color: inherit; text-decoration: none; }
 .logo-iko { font-family: var(--font-serif-en); font-weight: 700; font-size: 22px; color: var(--ink); }
 .logo-ken { font-family: var(--font-sans); font-weight: 400; font-size: 20px; letter-spacing: 0.08em; color: var(--brand); margin-left: 2px; }
 .logo-dot { font-family: var(--font-sans); font-weight: 900; font-size: 22px; color: var(--leaf); margin-left: 2px; transition: transform 0.5s var(--ease); }
-.status-pill { font-size: 11px; font-weight: 700; color: var(--leaf); display: flex; align-items: center; gap: 6px; background: rgba(52,199,89,0.1); padding: 6px 12px; border-radius: 99px; border: 1px solid rgba(52,199,89,0.2); transition: 0.3s; }
-.status-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--leaf); }
+.status-pill { font-size: 11px; font-weight: 700; color: var(--leaf); display: flex; align-items: center; background: rgba(52,199,89,0.1); padding: 6px 12px; border-radius: 99px; border: 1px solid rgba(52,199,89,0.2); transition: 0.3s; }
 
-.pane { display: none; animation: fadeIn 0.3s var(--ease); padding-top: 10px; }
+.pane { display: none; animation: fadeIn 0.3s var(--ease); padding-top: 8px; }
 .pane.on { display: block; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 .sec-title { margin: 16px 20px; font-family: var(--font-serif-en); font-style: italic; font-weight: 600; font-size: 26px; }
 
-.hero { padding: 10px 20px 24px; }
-.hero-cover { width: 100%; height: 200px; border-radius: 12px; background: url('https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=1000&auto=format&fit=crop') center/cover; margin-bottom: 24px; }
+.hero { padding: 4px 20px 24px; }
+.hero-cover { width: 100%; height: 200px; border-radius: 12px; background: var(--bg-card) url('hero.jpg') center/cover; margin-bottom: 24px; }
 .hero-title { font-family: var(--font-serif-en); font-weight: 600; font-size: 32px; color: var(--ink); line-height: 1.1; }
 .hero-desc { font-family: var(--font-serif-jp); font-weight: 600; font-size: 14px; color: var(--ink-sub); margin-top: 8px; }
 
@@ -109,7 +110,7 @@ a { color: inherit; text-decoration: none; }
 .sh-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 24px 16px; border-bottom: 1px solid var(--line); }
 .sh-head h3 { font-family: var(--font-serif-jp); font-weight: 700; font-size: 18px; }
 .sh-x { width: 32px; height: 32px; border-radius: 50%; background: var(--bg-card); display: flex; align-items: center; justify-content: center; color: var(--ink-sub); }
-.sh-body { padding: 24px; max-height: 80vh; overflow-y: auto; }
+.sh-body { padding: 24px; max-height: 80vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
 .qty-ctrl { display: flex; align-items: center; justify-content: space-between; background: var(--bg-card); padding: 16px 20px; border-radius: 12px; margin-bottom: 24px; font-weight: 600; }
 .q-btns { display: flex; align-items: center; gap: 20px; }
@@ -125,11 +126,18 @@ a { color: inherit; text-decoration: none; }
 .opt { padding: 14px; border: 1px solid var(--line); border-radius: 10px; font-weight: 600; font-size: 14px; text-align: center; background: var(--bg); }
 .opt.sel { border-color: var(--ink); border-width: 2px; padding: 13px; }
 
+.pay-sec-label { font-size: 12px; font-weight: 700; color: var(--ink-sub); margin-bottom: 10px; letter-spacing: 0.04em; }
+.pay-divider { display: flex; align-items: center; text-align: center; color: var(--ink-sub); font-size: 12px; font-weight: 600; margin: 20px 0; }
+.pay-divider::before, .pay-divider::after { content: ''; flex: 1; border-bottom: 1px solid var(--line); }
+.pay-divider span { padding: 0 12px; }
+.sq-card-wrapper { margin-bottom: 16px; min-height: 90px; background: var(--bg-card); padding: 12px; border-radius: 12px; border: 1px solid var(--line); }
+.secure-notice { font-size: 11px; color: var(--ink-sub); line-height: 1.5; margin-bottom: 16px; background: var(--bg-card); padding: 12px; border-radius: 8px; }
+#apple-pay-button { width: 100%; height: 48px; border-radius: 10px; overflow: hidden; }
+
 .trk-wrap { padding-bottom: 32px; margin: 0 20px 32px; border-bottom: 1px solid var(--line); }
 .trk-wrap:last-child { border-bottom: none; }
 .trk-head { display: flex; justify-content: space-between; margin-bottom: 16px; align-items: center; }
 .trk-ti { font-weight: 700; font-size: 16px; font-family: var(--font-serif-jp); display: flex; align-items: center; gap: 8px; }
-.pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--brand); animation: pulseAnim 1.5s infinite; }
 .trk-id { font-size: 13px; font-weight: 600; color: var(--ink-sub); }
 
 .trk { position: relative; display: flex; justify-content: space-between; margin: 0 10px; }
@@ -143,8 +151,6 @@ a { color: inherit; text-decoration: none; }
 .trk-step.act { color: var(--ink); font-weight: 700; }
 .trk-step.done .trk-dot { background: var(--brand); color: #fff; }
 .trk-step.done { color: var(--ink); }
-
-@keyframes pulseAnim { 0% { box-shadow: 0 0 0 0 rgba(90,139,156,0.4); } 70% { box-shadow: 0 0 0 6px rgba(90,139,156,0); } 100% { box-shadow: 0 0 0 0 rgba(90,139,156,0); } }
 .trk-items { margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--line); font-size: 14px; font-weight: 600; line-height: 1.8; }
 
 .link-card { display: flex; align-items: center; padding: 16px; background: var(--bg-card); border-radius: 12px; margin-bottom: 12px; }
@@ -178,11 +184,6 @@ a { color: inherit; text-decoration: none; }
 .k-btn { background: var(--leaf); color: #000; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 13px; }
 .k-btn.gh { background: transparent; color: #fff; border: 1px solid #555; }
 .rm-order-btn { display: block; width: 100%; padding: 12px; margin-top: 16px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--ink-sub); font-size: 13px; font-weight: 600; text-align: center; }
-
-#payment-form { display: none; margin-top: 16px; background: var(--bg-card); padding: 16px; border-radius: 12px; }
-#payment-form.on { display: block; }
-.sq-card-wrapper { margin-bottom: 16px; min-height: 80px; }
-.secure-notice { font-size: 11px; color: var(--ink-sub); line-height: 1.5; margin-bottom: 16px; background: var(--bg); padding: 12px; border-radius: 8px; border: 1px solid var(--line); }
 </style>
 </head>
 <body>
@@ -218,14 +219,13 @@ a { color: inherit; text-decoration: none; }
           <span class="logo-dot">.</span>
         </div>
       </button>
-      <div class="status-pill" id="syncPill" style="color:var(--ink-sub); border-color:var(--line); background:var(--bg-card);"><span class="dot" style="background:var(--ink-sub); animation:none;"></span>約<span id="hdWait">8</span>分待ち</div>
+      <div class="status-pill" id="syncPill" style="color:var(--ink-sub); border-color:var(--line); background:var(--bg-card);">約 <span id="hdWait" style="margin:0 2px;">8</span> 分待ち</div>
     </div>
   </div>
 
   <section class="pane on" id="p-menu">
-    <!-- ▼ オーダーストップ時の警告バナー -->
-    <div id="stop-banner" style="display:none; margin: 16px 20px; background: rgba(255,59,48,0.1); color: var(--alert); border: 1px solid rgba(255,59,48,0.3); border-radius: 8px; padding: 12px; text-align: center; font-weight: 700; font-size: 13px;">
-      ⚠️ ただいま混雑のため一時的に注文受付を停止しております
+    <div id="stop-banner" style="display:none; margin: 8px 20px 16px; background: rgba(255,59,48,0.1); color: var(--alert); border: 1px solid rgba(255,59,48,0.3); border-radius: 8px; padding: 12px; text-align: center; font-weight: 700; font-size: 13px;">
+      ただいま混雑のため一時的に注文受付を停止しております
     </div>
     
     <div class="hero">
@@ -234,7 +234,6 @@ a { color: inherit; text-decoration: none; }
       <div class="hero-desc">法政大学 美食・珈琲研究会</div>
     </div>
     <div class="sec-title">Menu</div>
-    <div style="margin: 0 20px 24px; font-weight: 700; font-size: 18px; letter-spacing: 0.05em;">ALL ¥300</div>
     <div id="menuWrap" class="menu-list"></div>
   </section>
 
@@ -246,9 +245,9 @@ a { color: inherit; text-decoration: none; }
   <section class="pane" id="p-biko">
     <div class="sec-title">Bikoken</div>
     <div style="margin: 0 20px;">
-      <a href="https://www.instagram.com/hosei_bisyoku_coffee/" target="_blank" class="link-card tap"><svg class="ic"><use href="#i-ig"/></svg><div style="flex:1"><b>Instagram</b><div style="font-size:11px;color:var(--ink-sub)">@hosei_bisyoku_coffee</div></div></a>
-      <a href="https://open.spotify.com/show/3tBeEl3rCe1qM9wNPzQnEP" target="_blank" class="link-card tap"><svg class="ic"><use href="#i-pod"/></svg><div style="flex:1"><b>Podcast</b><div style="font-size:11px;color:var(--ink-sub)">Spotifyにて配信中</div></div></a>
-      <a href="https://bisyokucoffee-circle.studio.site/" target="_blank" class="link-card tap"><svg class="ic"><use href="#i-web"/></svg><div style="flex:1"><b>Website</b><div style="font-size:11px;color:var(--ink-sub)">活動内容まとめ</div></div></a>
+      <a href="https://www.instagram.com/hosei_bisyoku_coffee/" target="_blank" rel="noopener noreferrer" class="link-card tap"><svg class="ic"><use href="#i-ig"/></svg><div style="flex:1"><b>Instagram</b><div style="font-size:11px;color:var(--ink-sub)">@hosei_bisyoku_coffee</div></div></a>
+      <a href="https://open.spotify.com/show/3tBeEl3rCe1qM9wNPzQnEP" target="_blank" rel="noopener noreferrer" class="link-card tap"><svg class="ic"><use href="#i-pod"/></svg><div style="flex:1"><b>Podcast</b><div style="font-size:11px;color:var(--ink-sub)">Spotifyにて配信中</div></div></a>
+      <a href="https://bisyokucoffee-circle.studio.site/" target="_blank" rel="noopener noreferrer" class="link-card tap"><svg class="ic"><use href="#i-web"/></svg><div style="flex:1"><b>Website</b><div style="font-size:11px;color:var(--ink-sub)">活動内容まとめ</div></div></a>
     </div>
   </section>
 
@@ -291,25 +290,23 @@ a { color: inherit; text-decoration: none; }
 
   <div class="sheet" id="sh-pay">
     <div class="sh-grab"></div>
-    <div class="sh-head"><h3>お支払い方法</h3><button class="sh-x tap" data-close><svg><use href="#i-close"/></svg></button></div>
+    <div class="sh-head"><h3>お支払い</h3><button class="sh-x tap" data-close><svg><use href="#i-close"/></svg></button></div>
     <div class="sh-body">
-      <div id="pay-methods" style="display:flex;flex-direction:column;gap:16px;">
-        <button class="cta tap" onclick="showSquareForm()">クレジットカード / Apple Pay (事前決済)</button>
-        <button class="cta ghost tap" onclick="doOrder('店頭決済')">店頭でお支払い</button>
+      <div id="apple-pay-container" style="display:none; margin-bottom: 20px;">
+        <div class="pay-sec-label">エクスプレスチェックアウト</div>
+        <div id="apple-pay-button"></div>
+        <div class="pay-divider"><span>またはクレジットカードで支払う</span></div>
       </div>
-      <div id="payment-form">
-        <!-- ▼ Apple Pay ボタン用のコンテナ -->
-        <div id="apple-pay-container" style="display:none; margin-bottom:16px;">
-          <div id="apple-pay-button" style="height:48px;"></div>
-          <div style="text-align:center; font-size:12px; color:var(--ink-sub); margin-top:16px;">またはクレジットカードで入力</div>
-        </div>
 
-        <div class="secure-notice">
-          <div>ご入力いただくクレジットカード情報は、決済代行会社(Square)によって暗号化され安全に処理されます。当サイトがカード情報を取得・保持することは一切ありません。</div>
-        </div>
-        <div id="card-container" class="sq-card-wrapper"></div>
-        <button class="cta tap" id="card-button">決済して注文する</button>
+      <div class="pay-sec-label">クレジットカード決済</div>
+      <div class="secure-notice">
+        カード情報は決済代行会社(Square)により暗号化され安全に処理されます。当サイトがカード情報を保持することはありません。
       </div>
+      <div id="card-container" class="sq-card-wrapper"></div>
+      <button class="cta tap" id="card-button">クレジットカードで決済する</button>
+
+      <div class="pay-divider"><span>または</span></div>
+      <button class="cta ghost tap" id="store-pay-button" onclick="doOrder('店頭決済')">店頭でお支払い (現金など)</button>
     </div>
   </div>
 
@@ -336,8 +333,7 @@ a { color: inherit; text-decoration: none; }
   <div class="k-hd">
     <div style="font-weight: 700; font-size: 16px;">KDS / <span id="kdsSyncStatus" style="font-size:12px; color:#888;">Local Mode</span></div>
     <div style="display:flex; gap:12px; align-items:center;">
-      <!-- ▼ オーダーストップ用トグルボタン -->
-      <button class="k-btn gh tap" id="kdsToggleBtn" onclick="toggleAccepting()" style="border-color:var(--leaf); color:var(--leaf);">🟢 注文受付中</button>
+      <button class="k-btn gh tap" id="kdsToggleBtn" onclick="toggleAccepting()" style="border-color:var(--leaf); color:var(--leaf);">注文受付中</button>
       <button class="k-btn gh tap" onclick="exitKds()">閉じる</button>
     </div>
   </div>
@@ -363,8 +359,8 @@ a { color: inherit; text-decoration: none; }
 <script>
 "use strict";
 
-const SQUARE_APP_ID = "sandbox-sq0idb-WThyQnfz1eCB61VNmae8CA";
-const SQUARE_LOCATION_ID = "L64BACJ7R7003";
+const SQUARE_APP_ID = "sq0idp-8RwnZ9Y0HEiuuxUOKom7XA";
+const SQUARE_LOCATION_ID = "LRYBX5AH6PHXB";
 
 const firebaseConfig = {
   apiKey: "AIzaSyALp5cInmwNrxI_rKFZsaPxysjQEvMxXo",
@@ -386,16 +382,41 @@ if (IS_SYNC_READY) {
 }
 
 const MENU = [
-  { id: 'm1', name: 'フルーツシロップソーダ', price: 300, img: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?q=80&w=800&auto=format&fit=crop', stock: 20, opts: [{k:'f', q:'フレーバー', req:true, o:['ハイビスカス','カシス']}] },
-  { id: 'm2', name: 'ノンアルコールカシスウーロン', price: 300, stock: 15, img: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?q=80&w=800&auto=format&fit=crop' },
-  { id: 'm3', name: 'アイスコーヒー', price: 300, stock: 30, img: 'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=80&w=800&auto=format&fit=crop' }
+  { id: 'm1', payId: 'm1', name: 'フルーツシロップソーダ(ハイビスカス)', price: 350, img: 'hibiscus.jpg', stock: 20, opts: [
+    {k:'s', q:'ストロー', req:true, o:['ストローあり','ストローなし']}
+  ] },
+  { id: 'm4', payId: 'm1', name: 'フルーツシロップソーダ(カシス)', price: 350, img: 'cassis.jpg', stock: 20, opts: [
+    {k:'s', q:'ストロー', req:true, o:['ストローあり','ストローなし']}
+  ] },
+  { id: 'm2', payId: 'm2', name: 'カシスウーロン(ソフトドリンク)', price: 300, stock: 15, img: 'oolong.jpg', opts: [
+    {k:'s', q:'ストロー', req:true, o:['ストローあり','ストローなし']}
+  ] },
+  { id: 'm3', payId: 'm3', name: 'アイスコーヒー', price: 300, stock: 30, img: 'coffee.jpg', opts: [
+    {k:'s', q:'ストロー', req:true, o:['ストローあり','ストローなし']}
+  ] }
 ];
 
 let ST = { wait: 8, stk: {}, ord: [], isAccepting: true };
 MENU.forEach(m => ST.stk[m.id] = m.stock);
 let CA = [];
+let isOrdering = false;
+
 let myOrders = [];
 let hiddenOrders = [];
+try {
+  myOrders = JSON.parse(localStorage.getItem('biko_my_orders') || '[]');
+  hiddenOrders = JSON.parse(localStorage.getItem('biko_hidden_orders') || '[]');
+} catch (e) {
+  myOrders = [];
+  hiddenOrders = [];
+}
+
+function saveLocalOrders() {
+  try {
+    localStorage.setItem('biko_my_orders', JSON.stringify(myOrders));
+    localStorage.setItem('biko_hidden_orders', JSON.stringify(hiddenOrders));
+  } catch (e) {}
+}
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
@@ -407,6 +428,12 @@ if (IS_SYNC_READY) {
     if (data) {
       ST.wait = data.wait ?? 8;
       ST.stk = data.stk || {};
+      MENU.forEach(m => {
+        if (ST.stk[m.id] === undefined) {
+          ST.stk[m.id] = m.stock;
+          dbRef.child('stk/' + m.id).set(m.stock);
+        }
+      });
       ST.isAccepting = data.isAcceptingOrders ?? true;
       if (data.ord) {
         ST.ord = Object.values(data.ord).sort((a,b) => a.ts - b.ts);
@@ -418,8 +445,6 @@ if (IS_SYNC_READY) {
       $('#syncPill').style.color = "var(--leaf)";
       $('#syncPill').style.borderColor = "rgba(52,199,89,0.2)";
       $('#syncPill').style.background = "rgba(52,199,89,0.1)";
-      $('#syncPill').querySelector('.dot').style.background = "var(--leaf)";
-      $('#syncPill').querySelector('.dot').style.animation = "pulseDot 2.5s infinite cubic-bezier(0.25, 1, 0.5, 1)";
       $('#kdsSyncStatus').textContent = "Live Sync";
       $('#kdsSyncStatus').style.color = "var(--leaf)";
     } else {
@@ -441,7 +466,7 @@ function updateAcceptingUI() {
     if (addBtn) { addBtn.classList.add('disabled'); addBtn.textContent = '受付停止中'; }
     if (goPay) { goPay.classList.add('disabled'); goPay.textContent = '受付停止中'; }
     if (kToggle) {
-      kToggle.textContent = '🔴 受付停止中';
+      kToggle.textContent = '受付停止中';
       kToggle.style.color = 'var(--alert)';
       kToggle.style.borderColor = 'var(--alert)';
     }
@@ -449,11 +474,11 @@ function updateAcceptingUI() {
     if (banner) banner.style.display = 'none';
     if (addBtn) { 
       addBtn.classList.remove('disabled'); 
-      if (CS && CS.i) { uQ(); } else { addBtn.innerHTML = 'カートに追加 <span id="iTotal">¥0</span>'; }
+      if (CS && CS.i) { uQ(); chk(); } else { addBtn.innerHTML = 'カートに追加 <span id="iTotal">¥0</span>'; }
     }
     if (goPay) { goPay.classList.remove('disabled'); goPay.textContent = '決済へ進む'; }
     if (kToggle) {
-      kToggle.textContent = '🟢 注文受付中';
+      kToggle.textContent = '注文受付中';
       kToggle.style.color = 'var(--leaf)';
       kToggle.style.borderColor = 'var(--leaf)';
     }
@@ -478,6 +503,26 @@ window.addEventListener('scroll', () => {
   }
 });
 
+function getCartQtyById(id) {
+  return CA.filter(c => c.id === id).reduce((sum, c) => sum + c.q, 0);
+}
+
+function validateCartStock() {
+  const totals = {};
+  for (const c of CA) {
+    totals[c.id] = (totals[c.id] || 0) + c.q;
+  }
+  for (const id of Object.keys(totals)) {
+    const avail = ST.stk[id] || 0;
+    if (totals[id] > avail) {
+      const item = MENU.find(m => m.id === id);
+      toast(`${item ? item.name : '商品'} の在庫が不足しています（残り${avail}杯）`);
+      return false;
+    }
+  }
+  return true;
+}
+
 function rMenu() {
   $('#menuWrap').innerHTML = MENU.map(m => {
     const st = ST.stk[m.id] || 0;
@@ -494,21 +539,24 @@ function rMenu() {
 }
 
 let oSh = null;
-function showSh(s) { if(oSh) oSh.classList.remove('on'); oSh = $(s); oSh.classList.add('on');$('#veil').classList.add('on'); document.body.style.overflow='hidden'; }
+function showSh(s) { if(oSh) oSh.classList.remove('on'); oSh = $(s); oSh.classList.add('on'); $('#veil').classList.add('on'); document.body.style.overflow='hidden'; }
 window.cloSh = () => { 
   if(oSh) oSh.classList.remove('on'); 
   $('#veil').classList.remove('on'); 
   document.body.style.overflow=''; 
   oSh=null; 
-  if ($('#pay-methods')) $('#pay-methods').style.display = 'flex';
-  if ($('#payment-form')) $('#payment-form').classList.remove('on');
 };
-$('#veil').addEventListener('click', cloSh); $$('[data-close]').forEach(b=>b.addEventListener('click', cloSh));
+$('#veil').addEventListener('click', cloSh);
+$$('[data-close]').forEach(b=>b.addEventListener('click', cloSh));
 
 let CS = { i: null, q: 1, s: {} };
 window.opI = (id) => {
   if (!ST.isAccepting) { toast('現在注文受付を停止しています'); return; }
-  const m = MENU.find(x => x.id === id); if(!m || (ST.stk[m.id]||0)<=0) return;
+  const m = MENU.find(x => x.id === id);
+  const avail = (ST.stk[id] || 0) - getCartQtyById(id);
+  if (!m || (ST.stk[id] || 0) <= 0) return;
+  if (avail <= 0) { toast('これ以上カートに追加できません（在庫上限）'); return; }
+
   CS = { i: m, q: 1, s: {} };
   $('#iName').textContent = m.name;
   
@@ -523,21 +571,43 @@ window.opI = (id) => {
 
   if(m.opts) {
     $('#iOpts').innerHTML = m.opts.map((g,gi) => `<div class="opt-group"><span class="opt-lbl">${g.q}</span><div class="opts">${g.o.map((o,oi)=>`<button class="opt tap" data-g="${gi}" data-o="${oi}">${o}</button>`).join('')}</div></div>`).join('');
-    $$('.opt').forEach(b => b.addEventListener('click', () => {       const g = m.opts[+b.dataset.g]; CS.s[g.k] = g.o[+b.dataset.o];       $$
-(`.opt[data-g="${b.dataset.g}"]`).forEach(x => x.classList.toggle('sel', x===b));
+    $$('.opt').forEach(b => b.addEventListener('click', () => {
+      const g = m.opts[+b.dataset.g]; CS.s[g.k] = g.o[+b.dataset.o];
+      $$(`.opt[data-g="${b.dataset.g}"]`).forEach(x => x.classList.toggle('sel', x===b));
       chk();
     }));
   } else $('#iOpts').innerHTML = '';
   uQ(); chk(); showSh('#sh-item');
 };
 
-function uQ() { $('#qVal').textContent = CS.q; $('#iTotal').textContent = `¥${CS.i.price * CS.q}`; const max = Math.min(9, ST.stk[CS.i.id]||0); $('#qSub').disabled = CS.q<=1; $('#qAdd').disabled = CS.q>=max; }
+function getMaxAddable() {
+  if (!CS.i) return 1;
+  const remain = (ST.stk[CS.i.id] || 0) - getCartQtyById(CS.i.id);
+  return Math.max(0, Math.min(9, remain));
+}
+
+function uQ() {
+  const max = getMaxAddable();
+  if (CS.q > max && max > 0) CS.q = max;
+  $('#qVal').textContent = CS.q;
+  $('#iTotal').textContent = `¥${CS.i.price * CS.q}`;
+  $('#qSub').disabled = CS.q <= 1;
+  $('#qAdd').disabled = CS.q >= max;
+}
 $('#qSub').addEventListener('click', ()=>{ if(CS.q>1){CS.q--;uQ();} });
-$('#qAdd').addEventListener('click', ()=>{ const max = Math.min(9, ST.stk[CS.i.id]||0); if(CS.q<max){CS.q++;uQ();} });
-function chk() { const m = !CS.i.opts ? false : CS.i.opts.some(g => g.req && !CS.s[g.k]); $('#addBtn').classList.toggle('disabled', m); }
+$('#qAdd').addEventListener('click', ()=>{ const max = getMaxAddable(); if(CS.q<max){CS.q++;uQ();} });
+function chk() {
+  if (!CS.i) return;
+  const optMissing = !CS.i.opts ? false : CS.i.opts.some(g => g.req && !CS.s[g.k]);
+  const noStock = getMaxAddable() <= 0;
+  $('#addBtn').classList.toggle('disabled', optMissing || noStock || !ST.isAccepting);
+}
 
 $('#addBtn').addEventListener('click', ()=>{
-  CA.push({ id: CS.i.id, nm: CS.i.name, pr: CS.i.price, q: CS.q, sp: Object.values(CS.s).join(' / ') });
+  if (!ST.isAccepting) { toast('現在注文受付を停止しています'); cloSh(); return; }
+  if (CS.q > getMaxAddable()) { toast('在庫が不足しています'); return; }
+  const spText = CS.i.opts ? CS.i.opts.map(g => CS.s[g.k]).filter(Boolean).join(' / ') : '';
+  CA.push({ id: CS.i.id, payId: CS.i.payId || CS.i.id, nm: CS.i.name, pr: CS.i.price, q: CS.q, sp: spText });
   uC(); cloSh(); toast('カートに追加しました');
 });
 
@@ -553,7 +623,6 @@ $('#cartBar').addEventListener('click', ()=>{
   $('#cSum').textContent = `¥${CA.reduce((a,c)=>a+(c.pr*c.q),0)}`; showSh('#sh-cart');
 });
 window.rm = (i) => { CA.splice(i,1); uC(); if(!CA.length) cloSh(); else $('#cartBar').click(); };
-$('#goPay').addEventListener('click', ()=>{ cloSh(); setTimeout(()=>showSh('#sh-pay'), 300); });
 
 let payments, card, applePay, paymentRequest;
 async function initSquare() {
@@ -566,39 +635,47 @@ async function initSquare() {
     paymentRequest = payments.paymentRequest({
       countryCode: 'JP',
       currency: 'JPY',
-      total: { amount: '300', label: 'BIKOKEN Cafe' } // 金額は決済直前にアップデートされます
+      total: { amount: '300', label: 'BIKOKEN Cafe' }
     });
 
     try {
       applePay = await payments.applePay(paymentRequest);
       await applePay.attach('#apple-pay-button');
-      $('#apple-pay-container').style.display = 'block'; // iPhone等のみ表示
+      $('#apple-pay-container').style.display = 'block';
     } catch(e) {
-      console.log('Apple Pay非対応環境です');
+      $('#apple-pay-container').style.display = 'none';
     }
   } catch (e) {
     console.error(e);
   }
 }
 
-window.showSquareForm = () => {
-  $('#pay-methods').style.display = 'none';
-  $('#payment-form').classList.add('on');
-  
-  if (paymentRequest) {
-    const amt = CA.reduce((a,c)=>a+(c.pr*c.q),0);
-    paymentRequest.update({
-      total: { amount: amt.toString(), label: 'BIKOKEN Cafe' }
-    });
-  }
-};
+$('#goPay').addEventListener('click', ()=>{ 
+  if (!ST.isAccepting) { toast('現在注文受付を停止しています'); cloSh(); return; }
+  if (!validateCartStock()) return;
+  cloSh(); 
+  setTimeout(()=>{
+    if (paymentRequest) {
+      try {
+        const amt = CA.reduce((a,c)=>a+(c.pr*c.q),0);
+        paymentRequest.update({
+          total: { amount: amt.toString(), label: 'BIKOKEN Cafe' }
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    showSh('#sh-pay');
+  }, 300); 
+});
 
 $('#card-button').addEventListener('click', async (event) => {
   event.preventDefault();
-  if (!card) return;
+  if (!card || isOrdering) return;
   if (!ST.isAccepting) { toast('現在注文受付を停止しています'); return; }
-  for(const c of CA) if((ST.stk[c.id]||0)<c.q) { toast(`${c.nm} の在庫が不足しています`); return; }
+  if (!validateCartStock()) return;
 
+  isOrdering = true;
   const btn = $('#card-button');
   btn.classList.add('disabled');
   btn.textContent = "決済処理中...";
@@ -612,19 +689,21 @@ $('#card-button').addEventListener('click', async (event) => {
     }
   } catch (e) {
     console.error(e);
-    toast("エラーが発生しました");
+    toast("決済通信エラーが発生しました");
   } finally {
+    isOrdering = false;
     btn.classList.remove('disabled');
-    btn.textContent = "決済して注文する";
+    btn.textContent = "クレジットカードで決済する";
   }
 });
 
-// Apple Payボタン用のイベントリスナー
 document.getElementById('apple-pay-button').addEventListener('click', async (event) => {
   event.preventDefault();
+  if (!applePay || isOrdering) return;
   if (!ST.isAccepting) { toast('現在注文受付を停止しています'); return; }
-  for(const c of CA) if((ST.stk[c.id]||0)<c.q) { toast(`${c.nm} の在庫が不足しています`); return; }
+  if (!validateCartStock()) return;
 
+  isOrdering = true;
   try {
     const result = await applePay.tokenize();
     if (result.status === 'OK') {
@@ -633,12 +712,13 @@ document.getElementById('apple-pay-button').addEventListener('click', async (eve
   } catch (e) {
     console.error(e);
     toast("Apple Pay決済中にエラーが発生しました");
+  } finally {
+    isOrdering = false;
   }
 });
 
 async function processPaymentToken(token) {
-  // セキュリティ対策: 金額は送らず、商品のIDと個数だけを送る
-  const secureCartData = CA.map(c => ({ id: c.id, q: c.q }));
+  const secureCartData = CA.map(c => ({ id: c.payId || c.id, q: c.q }));
   const response = await fetch('/api/payment', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -649,30 +729,46 @@ async function processPaymentToken(token) {
   });
 
   const data = await response.json();
-  if (data.success) {
-    doOrder('事前決済');
+  if (response.ok && data.success) {
+    executeOrder('事前決済');
   } else {
     toast("決済に失敗しました");
   }
 }
 
 window.doOrder = (md) => {
+  if (isOrdering) return;
   if (!ST.isAccepting) { toast('現在注文受付を停止しています'); cloSh(); return; }
-  for(const c of CA) if((ST.stk[c.id]||0)<c.q) { toast(`${c.nm} の在庫が不足しています`); cloSh(); return; }
-  
+  if (!validateCartStock()) { cloSh(); return; }
+  executeOrder(md);
+};
+
+function executeOrder(md) {
+  if (!CA.length) return;
   const oid = 'BIKO-' + Math.floor(1000+Math.random()*9000);
   const oData = { id: oid, md: md, tm: new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}), it: [...CA], st: 'new', ts: Date.now() };
 
   myOrders.push(oid);
+  saveLocalOrders();
+
+  const totalsById = {};
+  CA.forEach(c => {
+    totalsById[c.id] = (totalsById[c.id] || 0) + c.q;
+  });
 
   if (IS_SYNC_READY) {
-    CA.forEach(c => {
-      const cur = ST.stk[c.id] || 0;
-      dbRef.child('stk/' + c.id).set(cur - c.q);
+    Object.keys(totalsById).forEach(id => {
+      const qtyToDeduct = totalsById[id];
+      dbRef.child('stk/' + id).transaction(currentStock => {
+        const cur = currentStock ?? (ST.stk[id] || 0);
+        return Math.max(0, cur - qtyToDeduct);
+      });
     });
     dbRef.child('ord/' + oid).set(oData);
   } else {
-    for(const c of CA) ST.stk[c.id] -= c.q;
+    Object.keys(totalsById).forEach(id => {
+      ST.stk[id] = Math.max(0, (ST.stk[id] || 0) - totalsById[id]);
+    });
     ST.ord.push(oData);
     rMenu(); rOrd(); rK();
   }
@@ -682,14 +778,15 @@ window.doOrder = (md) => {
   $('#sOid').textContent = oid; $('#success').classList.add('on');
   setTimeout(()=>{
     $('#success').classList.remove('on');
-    $$('.tab').forEach(x=>x.classList.toggle('on', x.dataset.tab==='orders'));$$
-('.pane').forEach(p=>p.classList.toggle('on', p.id==='p-orders'));
+    $$('.tab').forEach(x=>x.classList.toggle('on', x.dataset.tab==='orders'));
+    $$('.pane').forEach(p=>p.classList.toggle('on', p.id==='p-orders'));
     window.scrollTo(0,0);
   }, 2800);
-};
+}
 
 window.hideOrder = (oid) => {
   hiddenOrders.push(oid);
+  saveLocalOrders();
   rOrd();
 };
 
@@ -705,20 +802,20 @@ function rOrd() {
   ar.innerHTML = [...myCurrentOrders].reverse().map(o => {
     const isP = o.st==='prep'||o.st==='done', isD = o.st==='done';
     const w = isD?'100%':(isP?'50%':'0%');
-    return `<div class="trk-wrap"><div class="trk-head"><div class="trk-ti"><div class="pulse" style="${isD?'animation:none;background:#888':''}"></div>${isD?'お渡し準備完了':(isP?'調理中':'受付完了')}</div><div class="trk-id">${o.id}</div></div>
+    return `<div class="trk-wrap"><div class="trk-head"><div class="trk-ti">${isD?'お渡し準備完了':(isP?'調理中':'受付完了')}</div><div class="trk-id">${o.id}</div></div>
     <div class="trk"><div class="trk-fill" style="width:${w}"></div>
     <div class="trk-step act"><div class="trk-dot"><svg><use href="#i-check"/></svg></div>受付</div>
     <div class="trk-step ${isP?'act':''}"><div class="trk-dot"><svg><use href="#i-check"/></svg></div>調理中</div>
     <div class="trk-step ${isD?'act':''}"><div class="trk-dot"><svg><use href="#i-check"/></svg></div>受取可</div></div>
-    <div class="trk-items">${o.it.map(c=>`${c.nm}${c.sp?'('+c.sp+')':''} <span style="color:#888;font-size:12px;font-weight:400">×${c.q}</span>`).join('<br>')}</div>
+    <div class="trk-items">${o.it.map(c=>`${c.nm} ${c.sp?'('+c.sp+')':''} <span style="color:#888;font-size:12px;font-weight:400">×${c.q}</span>`).join('<br>')}</div>
     ${isD ? `<button class="rm-order-btn tap" onclick="hideOrder('${o.id}')">注文履歴から消す</button>` : ''}
     </div>`;
   }).join('');
 }
 
 $$('.tab').forEach(t=>t.addEventListener('click', ()=>{
-  $$('.tab').forEach(x=>x.classList.toggle('on', x===t));$$
-('.pane').forEach(p=>p.classList.toggle('on', p.id===`p-${t.dataset.tab}`));
+  $$('.tab').forEach(x=>x.classList.toggle('on', x===t));
+  $$('.pane').forEach(p=>p.classList.toggle('on', p.id===`p-${t.dataset.tab}`));
   window.scrollTo(0,0);
 }));
 
@@ -729,7 +826,7 @@ $('#logoTap').addEventListener('click', (e)=>{
 });
 
 window.doLogin = () => {
-  if($('#staffPass').value === '1234') { 
+  if($('#staffPass').value === '2220') { 
     cloSh(); $('#app').style.display='none'; document.body.style.backgroundColor='#000'; $('#kds').classList.add('on'); rK(); 
   } else toast("パスワードが違います");
 };
