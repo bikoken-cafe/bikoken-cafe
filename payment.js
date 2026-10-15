@@ -1,13 +1,11 @@
 import { randomUUID } from 'crypto';
 
-const MENU_MASTER = {
-  'm1': { name: 'フルーツシロップソーダ(ハイビスカス)', price: 350, stock: 20 },
-  'm4': { name: 'フルーツシロップソーダ(カシス)', price: 350, stock: 20 },
-  'm2': { name: 'カシスウーロン(ソフトドリンク)', price: 350, stock: 15 },
-  'm3': { name: 'アイスコーヒー', price: 300, stock: 30 }
+const MENU_PRICES = {
+  'm1': 350, // フルーツシロップソーダ(ハイビスカス)
+  'm4': 350, // フルーツシロップソーダ(カシス)
+  'm2': 350, // カシスウーロン(ソフトドリンク) ※350円に修正済み
+  'm3': 300  // アイスコーヒー
 };
-
-const FIREBASE_DB_URL = 'https://bikokenn-cafe-default-rtdb.firebaseio.com/bikoken';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -15,121 +13,59 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { sourceId, cartItems, amount } = req.body;
+    const { sourceId, cartItems } = req.body;
 
     if (!sourceId || typeof sourceId !== 'string') {
       return res.status(400).json({ error: '無効な決済トークンです' });
     }
-
-    let secureTotalAmount = 0;
-    const verifiedItems = [];
-    const totalsById = {};
-
-    if (Array.isArray(cartItems) && cartItems.length > 0) {
-      for (const item of cartItems) {
-        const master = MENU_MASTER[item.id];
-        const qty = Number(item.q);
-
-        if (!master || !Number.isInteger(qty) || qty < 1 || qty > 20) {
-          return res.status(400).json({ error: '無効な商品または数量が含まれています' });
-        }
-        secureTotalAmount += (master.price * qty);
-        totalsById[item.id] = (totalsById[item.id] || 0) + qty;
-        verifiedItems.push({
-          id: item.id,
-          nm: master.name,
-          pr: master.price,
-          q: qty,
-          sp: typeof item.sp === 'string' ? item.sp.slice(0, 50) : ''
-        });
-      }
-    } else if (Number.isInteger(Number(amount)) && Number(amount) > 0) {
-      secureTotalAmount = Number(amount);
-    } else {
+    if (!Array.isArray(cartItems) || cartItems.length === 0 || cartItems.length > 50) {
       return res.status(400).json({ error: 'カート情報が不正です' });
     }
 
-    if (secureTotalAmount <= 0 || secureTotalAmount > 50000) {
+    let total = 0;
+    for (const item of cartItems) {
+      const price = MENU_PRICES[item.id];
+      const qty = Number(item.q);
+      if (!price || !Number.isInteger(qty) || qty < 1 || qty > 20) {
+        return res.status(400).json({ error: '無効な商品または数量です' });
+      }
+      total += price * qty;
+    }
+    if (total <= 0 || total > 50000) {
       return res.status(400).json({ error: '決済金額が範囲外です' });
     }
 
     const accessToken = (process.env.SQUARE_ACCESS_TOKEN || '').trim();
     const locationId = (process.env.SQUARE_LOCATION_ID || 'LRYBX5AH6PHXB').trim();
-
     if (!accessToken) {
-      return res.status(500).json({ error: 'VercelにSQUARE_ACCESS_TOKENが設定されていません' });
+      throw new Error('Squareの認証情報が設定されていません');
     }
 
+    // 本番環境
     const response = await fetch('https://connect.squareup.com/v2/payments', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
+        'Square-Version': '2025-01-23',
       },
       body: JSON.stringify({
         source_id: sourceId,
         idempotency_key: randomUUID(),
-        amount_money: {
-          amount: secureTotalAmount,
-          currency: 'JPY',
-        },
+        amount_money: { amount: total, currency: 'JPY' },
         location_id: locationId,
       }),
     });
 
     const data = await response.json();
-
     if (!response.ok) {
-      console.error('Square API Error:', data);
-      const sqErr = data.errors && data.errors[0]
-        ? `${data.errors[0].code}: ${data.errors[0].detail || ''}`
-        : '決済が承認されませんでした';
-      return res.status(response.status).json({ error: sqErr });
+      console.error('Square API Error:', JSON.stringify(data));
+      return res.status(response.status).json({ error: '決済が承認されませんでした' });
     }
 
-    if (verifiedItems.length > 0) {
-      const oid = 'BIKO-' + Math.floor(1000 + Math.random() * 9000);
-      const jstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
-      const tm = String(jstNow.getUTCHours()).padStart(2, '0') + ':' + String(jstNow.getUTCMinutes()).padStart(2, '0');
-
-      const orderData = {
-        id: oid,
-        md: '事前決済',
-        paymentId: data.payment.id,
-        tm: tm,
-        it: verifiedItems,
-        st: 'new',
-        ts: Date.now()
-      };
-
-      try {
-        await fetch(`${FIREBASE_DB_URL}/ord/${oid}.json`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(orderData)
-        });
-
-        const stkRes = await fetch(`${FIREBASE_DB_URL}/stk.json`);
-        const currentStk = stkRes.ok ? ((await stkRes.json()) || {}) : {};
-        for (const [id, deductQty] of Object.entries(totalsById)) {
-          const cur = currentStk[id] ?? MENU_MASTER[id].stock;
-          await fetch(`${FIREBASE_DB_URL}/stk/${id}.json`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(Math.max(0, cur - deductQty))
-          });
-        }
-        return res.status(200).json({ success: true, orderId: oid, payment: data.payment });
-      } catch (fbErr) {
-        console.error('Firebase Sync Error:', fbErr);
-        return res.status(200).json({ success: true, payment: data.payment });
-      }
-    }
-
-    return res.status(200).json({ success: true, payment: data.payment });
-
+    return res.status(200).json({ success: true, paymentId: data.payment?.id });
   } catch (error) {
     console.error('Server Error:', error);
-    return res.status(500).json({ error: error.message || 'サーバー内部エラーが発生しました' });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }

@@ -764,10 +764,11 @@ async function processPaymentToken(token) {
   }
 
   if (response.ok && data.success) {
+    const pid = data.paymentId || (data.payment && data.payment.id) || 'paid';
     if (data.orderId) {
       finishOrderUI(data.orderId, '事前決済');
     } else {
-      executeOrder('事前決済');
+      executeOrder('事前決済', pid);
     }
   } else {
     toast(formatErr(data.error) || "決済が承認されませんでした");
@@ -803,11 +804,12 @@ function finishOrderUI(oid, md = '事前決済') {
   }, 3200);
 }
 
-function executeOrder(md) {
+function executeOrder(md, paymentId = null) {
   if (!CA.length) return;
   const oid = 'BIKO-' + Math.floor(1000+Math.random()*9000);
   const initSt = md === '店頭決済' ? 'unpaid' : 'new';
   const oData = { id: oid, md: md, tm: new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}), it: [...CA], st: initSt, ts: Date.now() };
+  if (paymentId) oData.paymentId = paymentId;
 
   const totalsById = {};
   CA.forEach(c => {
@@ -982,10 +984,10 @@ function rK() {
     else if (isDone) btnText = 'お渡し済 (消す)';
 
     let payBadge = '';
-    if (o.paymentId) {
+    if (o.paymentId || o.md === '事前決済') {
       payBadge = `<span style="color:var(--leaf);font-weight:700;">事前決済(決済済 ¥${totalAmt})</span>`;
     } else if (isUnpaid) {
-      payBadge = `<span style="color:var(--warn);font-weight:700;"> 店頭決済(未会計 ¥${totalAmt})</span>`;
+      payBadge = `<span style="color:var(--warn);font-weight:700;">店頭決済(未会計 ¥${totalAmt})</span>`;
     } else {
       payBadge = `<span style="color:var(--leaf);font-weight:700;">店頭決済(会計済 ¥${totalAmt})</span>`;
     }
