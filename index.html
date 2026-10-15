@@ -19,7 +19,7 @@
 <style>
 :root {
   --ink: #1C1C1E; --ink-sub: #8E8E93; --bg: #FFFFFF; --bg-card: #F2F2F7;
-  --brand: #5A8B9C; --leaf: #34C759; --alert: #FF3B30; --line: #E5E5EA;
+  --brand: #5A8B9C; --leaf: #34C759; --alert: #FF3B30; --warn: #FF9500; --line: #E5E5EA;
   --tabbar-h: 70px; --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 20px);
   --font-serif-en: 'Cormorant Garamond', serif; --font-serif-jp: 'Shippori Mincho', serif; --font-sans: 'Inter', 'Noto Sans JP', sans-serif;
   --ease: cubic-bezier(0.25, 1, 0.5, 1);
@@ -149,6 +149,7 @@ a { color: inherit; text-decoration: none; }
 .trk-head { display: flex; justify-content: space-between; margin-bottom: 16px; align-items: center; }
 .trk-ti { font-weight: 700; font-size: 16px; font-family: var(--font-serif-jp); display: flex; align-items: center; gap: 8px; }
 .trk-id { font-size: 13px; font-weight: 600; color: var(--ink-sub); }
+.unpaid-box { background: rgba(255,149,0,0.12); border: 1px solid rgba(255,149,0,0.4); color: #C97400; padding: 12px; border-radius: 10px; font-size: 13px; font-weight: 700; margin-bottom: 16px; text-align: center; }
 
 .trk { position: relative; display: flex; justify-content: space-between; margin: 0 10px; }
 .trk::before { content: ''; position: absolute; top: 12px; left: 0; right: 0; height: 3px; background: var(--line); z-index: 1; border-radius: 2px; }
@@ -159,6 +160,8 @@ a { color: inherit; text-decoration: none; }
 .trk-dot svg { width: 14px; height: 14px; }
 .trk-step.act .trk-dot { background: var(--brand); color: #fff; transform: scale(1.1); box-shadow: 0 0 0 4px rgba(90,139,156,0.2); }
 .trk-step.act { color: var(--ink); font-weight: 700; }
+.trk-step.warn .trk-dot { background: var(--warn); color: #fff; transform: scale(1.1); box-shadow: 0 0 0 4px rgba(255,149,0,0.2); }
+.trk-step.warn { color: #C97400; font-weight: 700; }
 .trk-step.done .trk-dot { background: var(--brand); color: #fff; }
 .trk-step.done { color: var(--ink); }
 .trk-items { margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--line); font-size: 14px; font-weight: 600; line-height: 1.8; }
@@ -168,7 +171,7 @@ a { color: inherit; text-decoration: none; }
 
 #success { position: fixed; inset: 0; z-index: 99999; background: var(--brand); color: #fff; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: 0.5s; pointer-events: none; }
 #success.on { opacity: 1; visibility: visible; pointer-events: auto; }
-.suc-in { text-align: center; transform: scale(0.95); transition: 0.6s var(--ease); }
+.suc-in { text-align: center; transform: scale(0.95); transition: 0.6s var(--ease); padding: 0 24px; }
 #success.on .suc-in { transform: scale(1); }
 .suc-ic { position: relative; width: 64px; height: 64px; margin: 0 auto 24px; }
 .suc-ic svg { width: 100%; height: 100%; }
@@ -178,10 +181,10 @@ a { color: inherit; text-decoration: none; }
 .steam span:nth-child(3){ animation-delay: 0.6s; }
 @keyframes stm { 0%{transform:translateY(6px) scaleY(0.5);opacity:0;} 50%{opacity:1;} 100%{transform:translateY(-16px) scaleY(1.5);opacity:0;filter:blur(2px);} }
 .suc-ti { font-family: var(--font-serif-en); font-size: 36px; font-style: italic; font-weight: 600; margin-bottom: 12px; }
-.suc-msg { font-family: var(--font-serif-jp); font-size: 15px; opacity: 0.9; margin-bottom: 24px; }
+.suc-msg { font-family: var(--font-serif-jp); font-size: 15px; opacity: 0.95; margin-bottom: 24px; line-height: 1.7; }
 .suc-oid { font-weight: 700; font-size: 28px; letter-spacing: 0.05em; background: rgba(0,0,0,0.15); padding: 12px 24px; border-radius: 12px; display: inline-block; }
 
-.toast { position: fixed; top: 20px; left: 50%; transform: translate(-50%, -100%); background: var(--ink); color: #fff; padding: 12px 24px; border-radius: 99px; font-weight: 600; font-size: 14px; opacity: 0; transition: 0.3s var(--ease); z-index: 9999; }
+.toast { position: fixed; top: 20px; left: 50%; transform: translate(-50%, -100%); background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 99px; font-weight: 600; font-size: 13px; opacity: 0; transition: 0.3s var(--ease); z-index: 999999; max-width: 90vw; text-align: center; }
 .toast.on { opacity: 1; transform: translate(-50%, 0); }
 
 .login-input { width: 100%; padding: 16px; border: 1px solid var(--line); border-radius: 12px; font-size: 16px; background: var(--bg-card); outline: none; margin-bottom: 16px; font-family: var(--font-sans); }
@@ -192,6 +195,7 @@ a { color: inherit; text-decoration: none; }
 .k-sec { padding: 24px; }
 .k-card { background: #1C1C1E; border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
 .k-btn { background: var(--leaf); color: #000; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 13px; }
+.k-btn.warn { background: var(--warn); color: #000; }
 .k-btn.gh { background: transparent; color: #fff; border: 1px solid #555; }
 .rm-order-btn { display: block; width: 100%; padding: 12px; margin-top: 16px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--ink-sub); font-size: 13px; font-weight: 600; text-align: center; }
 </style>
@@ -316,7 +320,7 @@ a { color: inherit; text-decoration: none; }
       <button class="cta tap" id="card-button">クレジットカードで決済する</button>
 
       <div class="pay-divider"><span>または</span></div>
-      <button class="cta ghost tap" id="store-pay-button" onclick="doOrder('店頭決済')">店頭でお支払い (現金など)</button>
+      <button class="cta ghost tap" id="store-pay-button" onclick="doOrder('店頭決済')">店頭でお支払い (レジで会計後に調理)</button>
     </div>
   </div>
 
@@ -332,8 +336,8 @@ a { color: inherit; text-decoration: none; }
   <div id="success">
     <div class="suc-in">
       <div class="suc-ic"><div class="steam"><span></span><span></span><span></span></div><svg><use href="#i-cup"/></svg></div>
-      <div class="suc-ti">Thank you!</div>
-      <div class="suc-msg">ご注文ありがとうございます。<br>心を込めてお作りします。</div>
+      <div class="suc-ti" id="sTitle">Thank you!</div>
+      <div class="suc-msg" id="sMsg">ご注文ありがとうございます。<br>心を込めてお作りします。</div>
       <div class="suc-oid" id="sOid"></div>
     </div>
   </div>
@@ -394,7 +398,7 @@ if (IS_SYNC_READY) {
 const MENU = [
   { id: 'm1', payId: 'm1', name: 'フルーツシロップソーダ(ハイビスカス)', price: 350, img: 'hibiscus.jpg', stock: 20 },
   { id: 'm4', payId: 'm4', name: 'フルーツシロップソーダ(カシス)', price: 350, img: 'cassis.jpg', stock: 20 },
-  { id: 'm2', payId: 'm2', name: 'カシスウーロン(ソフトドリンク)', price: 300, stock: 15, img: 'oolong.jpg' },
+  { id: 'm2', payId: 'm2', name: 'カシスウーロン(ソフトドリンク)', price: 350, stock: 15, img: 'oolong.jpg' },
   { id: 'm3', payId: 'm3', name: 'アイスコーヒー', price: 300, stock: 30, img: 'coffee.jpg' }
 ];
 
@@ -422,7 +426,22 @@ function saveLocalOrders() {
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-function toast(m) { $('#toast').textContent = m; $('#toast').classList.add('on'); setTimeout(()=>$('#toast').classList.remove('on'), 2500); }
+
+function formatErr(err) {
+  if (!err) return "決済エラーが発生しました";
+  if (typeof err === "string") return err;
+  if (Array.isArray(err)) return formatErr(err[0]);
+  if (typeof err === "object") {
+    return err.detail || err.message || err.code || JSON.stringify(err);
+  }
+  return String(err);
+}
+
+function toast(m) {
+  $('#toast').textContent = formatErr(m);
+  $('#toast').classList.add('on');
+  setTimeout(()=>$('#toast').classList.remove('on'), 3500);
+}
 
 if (IS_SYNC_READY) {
   dbRef.on('value', (snapshot) => {
@@ -637,7 +656,7 @@ async function initSquare() {
     paymentRequest = payments.paymentRequest({
       countryCode: 'JP',
       currencyCode: 'JPY',
-      total: { amount: '300', label: 'BIKOKEN Cafe' }
+      total: { amount: '350', label: 'BIKOKEN Cafe' }
     });
 
     try {
@@ -661,7 +680,7 @@ $('#goPay').addEventListener('click', ()=>{
       try {
         const amt = CA.reduce((a,c)=>a+(c.pr*c.q),0);
         paymentRequest.update({
-          total: { amount: amt.toString(), label: 'BIKOKEN Cafe' }
+          total: { amount: String(amt), label: 'BIKOKEN Cafe' }
         });
       } catch (e) {
         console.error(e);
@@ -687,7 +706,8 @@ $('#card-button').addEventListener('click', async (event) => {
     if (result.status === 'OK') {
       await processPaymentToken(result.token);
     } else {
-      toast("カード情報が正しくありません");
+      const errMsg = result.errors && result.errors[0] ? result.errors[0].message : "カード情報が正しくありません";
+      toast(errMsg);
     }
   } catch (e) {
     console.error(e);
@@ -710,6 +730,8 @@ document.getElementById('apple-pay-button').addEventListener('click', async (eve
     const result = await applePay.tokenize();
     if (result.status === 'OK') {
       await processPaymentToken(result.token);
+    } else if (result.errors && result.errors.length > 0) {
+      toast(result.errors[0].message || "Apple Pay認証がキャンセルされました");
     }
   } catch (e) {
     console.error(e);
@@ -721,24 +743,34 @@ document.getElementById('apple-pay-button').addEventListener('click', async (eve
 
 async function processPaymentToken(token) {
   const secureCartData = CA.map(c => ({ id: c.id, q: c.q, sp: c.sp || '' }));
+  const totalAmt = CA.reduce((a,c)=>a+(c.pr*c.q),0);
+
   const response = await fetch('/api/payment', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       sourceId: token,
+      amount: totalAmt,
       cartItems: secureCartData
     })
   });
 
-  const data = await response.json();
+  let data = {};
+  try {
+    data = await response.json();
+  } catch (e) {
+    toast("サーバー応答エラー (" + response.status + ")");
+    return;
+  }
+
   if (response.ok && data.success) {
     if (data.orderId) {
-      finishOrderUI(data.orderId);
+      finishOrderUI(data.orderId, '事前決済');
     } else {
       executeOrder('事前決済');
     }
   } else {
-    toast(data.error || "決済に失敗しました");
+    toast(formatErr(data.error) || "決済が承認されませんでした");
   }
 }
 
@@ -749,24 +781,33 @@ window.doOrder = (md) => {
   executeOrder(md);
 };
 
-function finishOrderUI(oid) {
+function finishOrderUI(oid, md = '事前決済') {
   myOrders.push(oid);
   saveLocalOrders();
   CA = []; uC(); cloSh();
   
+  if (md === '店頭決済') {
+    $('#sTitle').textContent = 'Proceed to Cashier';
+    $('#sMsg').innerHTML = '仮受付いたしました。<br><b>レジにて番号をお伝えいただき、お支払い後に調理を開始いたします。</b>';
+  } else {
+    $('#sTitle').textContent = 'Thank you!';
+    $('#sMsg').innerHTML = 'ご注文ありがとうございます。<br>心を込めてお作りします。';
+  }
+
   $('#sOid').textContent = oid; $('#success').classList.add('on');
   setTimeout(()=>{
     $('#success').classList.remove('on');
     $$('.tab').forEach(x=>x.classList.toggle('on', x.dataset.tab==='orders'));
     $$('.pane').forEach(p=>p.classList.toggle('on', p.id==='p-orders'));
     window.scrollTo(0,0);
-  }, 2800);
+  }, 3200);
 }
 
 function executeOrder(md) {
   if (!CA.length) return;
   const oid = 'BIKO-' + Math.floor(1000+Math.random()*9000);
-  const oData = { id: oid, md: md, tm: new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}), it: [...CA], st: 'new', ts: Date.now() };
+  const initSt = md === '店頭決済' ? 'unpaid' : 'new';
+  const oData = { id: oid, md: md, tm: new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}), it: [...CA], st: initSt, ts: Date.now() };
 
   const totalsById = {};
   CA.forEach(c => {
@@ -790,7 +831,7 @@ function executeOrder(md) {
     rMenu(); rOrd(); rK();
   }
 
-  finishOrderUI(oid);
+  finishOrderUI(oid, md);
 }
 
 window.hideOrder = (oid) => {
@@ -798,6 +839,10 @@ window.hideOrder = (oid) => {
   saveLocalOrders();
   rOrd();
 };
+
+function getOrderTotal(o) {
+  return (o.it || []).reduce((sum, c) => sum + ((c.pr || 0) * (c.q || 0)), 0);
+}
 
 function rOrd() {
   const ar = $('#orderWrap');
@@ -809,15 +854,23 @@ function rOrd() {
 
   if(!myCurrentOrders.length) { ar.innerHTML = '<div style="text-align:center;padding:40px 0;color:#888">注文はありません</div>'; return; }
   ar.innerHTML = [...myCurrentOrders].reverse().map(o => {
-    const isP = o.st==='prep'||o.st==='done', isD = o.st==='done';
-    const w = isD?'100%':(isP?'50%':'0%');
-    return `<div class="trk-wrap"><div class="trk-head"><div class="trk-ti">${isD?'お渡し準備完了':(isP?'調理中':'受付完了')}</div><div class="trk-id">${o.id}</div></div>
-    <div class="trk"><div class="trk-fill" style="width:${w}"></div>
-    <div class="trk-step act"><div class="trk-dot"><svg><use href="#i-check"/></svg></div>受付</div>
-    <div class="trk-step ${isP?'act':''}"><div class="trk-dot"><svg><use href="#i-check"/></svg></div>調理中</div>
-    <div class="trk-step ${isD?'act':''}"><div class="trk-dot"><svg><use href="#i-check"/></svg></div>受取可</div></div>
-    <div class="trk-items">${o.it.map(c=>`${c.nm} ${c.sp?'('+c.sp+')':''} <span style="color:#888;font-size:12px;font-weight:400">×${c.q}</span>`).join('<br>')}</div>
-    ${isD ? `<button class="rm-order-btn tap" onclick="hideOrder('${o.id}')">注文履歴から消す</button>` : ''}
+    const isUnpaid = o.st === 'unpaid';
+    const isP = o.st === 'prep' || o.st === 'done', isD = o.st === 'done';
+    const w = isD ? '100%' : (isP ? '50%' : '0%');
+    const totalAmt = getOrderTotal(o);
+    const statusTitle = isUnpaid ? 'レジでお支払い待ち' : (isD ? 'お渡し準備完了' : (isP ? '調理中' : '受付完了'));
+
+    return `<div class="trk-wrap">
+      <div class="trk-head"><div class="trk-ti" style="${isUnpaid ? 'color:#C97400;' : ''}">${statusTitle}</div><div class="trk-id">${o.id}</div></div>
+      ${isUnpaid ? `<div class="unpaid-box">レジにて番号【${o.id}】をお伝えの上、<br>合計 <b>¥${totalAmt}</b> をお支払いください。<br><span style="font-size:11px;font-weight:600;">※お支払い確認後に調理を開始いたします</span></div>` : ''}
+      <div class="trk"><div class="trk-fill" style="width:${w}"></div>
+      <div class="trk-step ${isUnpaid ? 'warn' : 'act'}"><div class="trk-dot"><svg><use href="#i-check"/></svg></div>${isUnpaid ? '会計待ち' : '受付済'}</div>
+      <div class="trk-step ${isP ? 'act' : ''}"><div class="trk-dot"><svg><use href="#i-check"/></svg></div>調理中</div>
+      <div class="trk-step ${isD ? 'act' : ''}"><div class="trk-dot"><svg><use href="#i-check"/></svg></div>受取可</div></div>
+      <div class="trk-items">${o.it.map(c=>`${c.nm} ${c.sp?'('+c.sp+')':''} <span style="color:#888;font-size:12px;font-weight:400">×${c.q}</span>`).join('<br>')}
+      <div style="margin-top:8px;font-size:13px;color:var(--ink-sub);">合計: ¥${totalAmt} (${o.md})</div>
+      </div>
+      ${isD ? `<button class="rm-order-btn tap" onclick="hideOrder('${o.id}')">注文履歴から消す</button>` : ''}
     </div>`;
   }).join('');
 }
@@ -857,14 +910,17 @@ window.cStk = (id,d)=>{
 
 window.adv = (i, reverse = false) => {
   const o = ST.ord[i];
+  if (!o) return;
   let nSt = o.st;
   
   if (reverse) {
     if (o.st === 'done') nSt = 'prep';
     else if (o.st === 'prep') nSt = 'new';
+    else if (o.st === 'new' && o.md === '店頭決済') nSt = 'unpaid';
     else if (o.st === 'archived') nSt = 'done';
   } else {
-    if (o.st === 'new') nSt = 'prep';
+    if (o.st === 'unpaid') nSt = 'new';
+    else if (o.st === 'new') nSt = 'prep';
     else if (o.st === 'prep') nSt = 'done';
     else if (o.st === 'done') nSt = 'archived';
   }
@@ -880,6 +936,34 @@ window.adv = (i, reverse = false) => {
   }
 };
 
+window.cancelUnpaid = (i) => {
+  const o = ST.ord[i];
+  if (!o || o.st !== 'unpaid') return;
+
+  const totalsById = {};
+  (o.it || []).forEach(c => {
+    totalsById[c.id] = (totalsById[c.id] || 0) + c.q;
+  });
+
+  if (IS_SYNC_READY) {
+    Object.keys(totalsById).forEach(id => {
+      const qtyToRestore = totalsById[id];
+      dbRef.child('stk/' + id).transaction(currentStock => {
+        const cur = currentStock ?? (ST.stk[id] || 0);
+        return cur + qtyToRestore;
+      });
+    });
+    dbRef.child('ord/' + o.id + '/st').set('archived');
+  } else {
+    Object.keys(totalsById).forEach(id => {
+      ST.stk[id] = (ST.stk[id] || 0) + totalsById[id];
+    });
+    o.st = 'archived';
+    rMenu(); rOrd(); rK();
+  }
+  toast(`${o.id} を取り消し、在庫を戻しました`);
+};
+
 function rK() {
   $('#kWait').textContent = ST.wait;
   $('#kStock').innerHTML = MENU.map(m => `<div class="k-card"><div><b>${m.name}</b></div><div style="display:flex;gap:12px;align-items:center"><button class="k-btn gh tap" onclick="cStk('${m.id}',-1)">-</button><span style="font-size:16px;font-weight:700;width:24px;text-align:center">${ST.stk[m.id]||0}</span><button class="k-btn gh tap" onclick="cStk('${m.id}',1)">+</button></div></div>`).join('');
@@ -887,19 +971,36 @@ function rK() {
   const ao = ST.ord.map((o,i)=>({...o,i})).filter(o => o.st !== 'archived').sort((a,b) => b.ts - a.ts);
   
   $('#kOrders').innerHTML = ao.length ? ao.map(o => {
+    const isUnpaid = o.st === 'unpaid';
     const isDone = o.st === 'done';
     const isNew = o.st === 'new';
-    const btnText = isNew ? '調理開始' : (o.st === 'prep' ? '完了' : 'お渡し済 (消す)');
-    const payBadge = o.paymentId ? `<span style="color:var(--leaf);font-weight:700;">${o.md}(決済済)</span>` : `<span>${o.md}</span>`;
+    const totalAmt = getOrderTotal(o);
+
+    let btnText = '調理開始';
+    if (isUnpaid) btnText = `会計確認 (¥${totalAmt})`;
+    else if (o.st === 'prep') btnText = '完了';
+    else if (isDone) btnText = 'お渡し済 (消す)';
+
+    let payBadge = '';
+    if (o.paymentId) {
+      payBadge = `<span style="color:var(--leaf);font-weight:700;">事前決済(決済済 ¥${totalAmt})</span>`;
+    } else if (isUnpaid) {
+      payBadge = `<span style="color:var(--warn);font-weight:700;"> 店頭決済(未会計 ¥${totalAmt})</span>`;
+    } else {
+      payBadge = `<span style="color:var(--leaf);font-weight:700;">店頭決済(会計済 ¥${totalAmt})</span>`;
+    }
+
+    const canReverse = !isUnpaid && !(isNew && o.md !== '店頭決済');
     
-    return `<div class="k-card" style="align-items:flex-start; ${isDone ? 'opacity:0.6;' : ''}">
+    return `<div class="k-card" style="align-items:flex-start; ${isDone ? 'opacity:0.6;' : ''} ${isUnpaid ? 'border:1px solid var(--warn);' : ''}">
       <div style="flex:1">
         <div style="font-size:12px;color:#888">${o.id} / ${payBadge} / ${o.tm}</div>
         <div style="margin-top:8px;font-weight:700;line-height:1.6">${o.it.map(c=>`${c.nm} ${c.sp?'('+c.sp+')':''} x${c.q}`).join('<br>')}</div>
       </div>
       <div style="display:flex; flex-direction:column; gap:8px;">
-        <button class="k-btn tap" onclick="adv(${o.i})" ${isDone ? 'style="background:#333;color:#fff;"' : ''}>${btnText}</button>
-        ${!isNew ? `<button class="k-btn gh tap" onclick="adv(${o.i}, true)" style="font-size:11px; padding:4px 8px;">戻す</button>` : ''}
+        <button class="k-btn ${isUnpaid ? 'warn' : ''} tap" onclick="adv(${o.i})" ${isDone ? 'style="background:#333;color:#fff;"' : ''}>${btnText}</button>
+        ${isUnpaid ? `<button class="k-btn gh tap" onclick="cancelUnpaid(${o.i})" style="font-size:11px; padding:4px 8px; color:#FF3B30; border-color:#552222;">取消(在庫戻す)</button>` : ''}
+        ${canReverse ? `<button class="k-btn gh tap" onclick="adv(${o.i}, true)" style="font-size:11px; padding:4px 8px;">戻す</button>` : ''}
       </div>
     </div>`;
   }).join('') : '<div style="color:#888;text-align:center;padding:20px">No Orders</div>';
