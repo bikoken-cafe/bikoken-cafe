@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#FFFFFF">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>BIKOKEN Cafe</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;600;700&family=Noto+Sans+JP:wght@400;600;700&family=Shippori+Mincho:wght@600;700&display=swap" rel="stylesheet">
+
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
+<script src="https://web.squarecdn.com/v1/square.js"></script>
+
+<style>
+:root {
+  --ink: #1C1C1E; --ink-sub: #8E8E93; --bg: #FFFFFF; --bg-card: #F2F2F7;
+  --brand: #5A8B9C; --leaf: #34C759; --alert: #FF3B30; --warn: #FF9500; --line: #E5E5EA;
+  --tabbar-h: 70px; --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 20px);
+  --font-serif-en: 'Cormorant Garamond', serif; --font-serif-jp: 'Shippori Mincho', serif; --font-sans: 'Inter', 'Noto Sans JP', sans-serif;
+  --ease: cubic-bezier(0.25, 1, 0.5, 1);
+  --max-w: 600px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body { 
+  background-color: var(--bg);
+  font-family: var(--font-sans); color: var(--ink); 
+  font-size: 15px; line-height: 1.6; min-height: 100vh;
+  overscroll-behavior-y: none;
+}
+
+#app {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  background: var(--bg);
+  min-height: 100vh;
+  box-shadow: 0 0 40px rgba(0,0,0,0.05);
+  position: relative;
+  padding-top: calc(var(--safe-top) + 52px);
+  padding-bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 120px);
+}
+
+button { font-family: inherit; border: none; background: none; cursor: pointer; color: inherit; }
+a { color: inherit; text-decoration: none; }
+.tap { transition: transform 0.2s var(--ease), opacity 0.2s var(--ease); }
+.tap:active { transform: scale(0.96); opacity: 0.8; }
+.ic { width: 24px; height: 24px; display: inline-block; vertical-align: middle; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;}
+
+#splash { position: fixed; inset: 0; z-index: 9999; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.6s ease, visibility 0.6s ease; }
+#splash.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+.logo-wrap-splash { display: flex; align-items: baseline; user-select: none; }
+.logo-wrap-splash .logo-biko { font-family: var(--font-serif-en); font-weight: 700; color: var(--ink); font-size: 42px; opacity: 0; transform: translateY(10px); animation: splashFade 2s var(--ease) forwards; }
+.logo-wrap-splash .logo-ken { font-family: var(--font-sans); font-weight: 400; letter-spacing: 0.08em; color: var(--brand); margin-left: 2px; font-size: 38px; opacity: 0; transform: translateY(10px); animation: splashFade 2s var(--ease) 0.1s forwards; }
+.logo-wrap-splash .logo-dot { font-family: var(--font-sans); font-weight: 900; color: var(--leaf); margin-left: 2px; font-size: 42px; opacity: 0; transform: translateY(10px); animation: splashFade 2s var(--ease) 0.1s forwards; }
+.splash-sub { font-size: 10px; color: var(--ink-sub); letter-spacing: 0.25em; text-transform: uppercase; margin-top: 12px; font-weight: 600; opacity: 0; transform: translateY(10px); animation: splashFade 2s var(--ease) 0.2s forwards; }
+@keyframes splashFade { 20% { opacity: 1; transform: translateY(0); } 80% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-5px); } }
+
+.header { position: fixed; top: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: var(--max-w); z-index: 50; padding-top: var(--safe-top); background: rgba(255,255,255,0.92); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-bottom: 0.5px solid transparent; transition: border-color 0.3s; }
+.header.scrolled { border-bottom-color: var(--line); }
+.header-in { display: flex; align-items: center; justify-content: space-between; height: 52px; padding: 0 20px; }
+.header-logo { cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; padding: 4px 0; touch-action: manipulation; }
+.logo-wrap { display: flex; align-items: baseline; }
+.logo-b { font-family: var(--font-serif-en); font-weight: 700; font-size: 24px; color: var(--ink); transition: color 0.5s var(--ease); }
+.header.scrolled .logo-b { color: var(--brand); }
+.logo-rest { display: inline-flex; align-items: baseline; overflow: hidden; max-width: 120px; opacity: 1; white-space: nowrap; transition: max-width 0.5s var(--ease), opacity 0.4s var(--ease); }
+.header.scrolled .logo-rest { max-width: 0; opacity: 0; }
+.logo-iko { font-family: var(--font-serif-en); font-weight: 700; font-size: 22px; color: var(--ink); }
+.logo-ken { font-family: var(--font-sans); font-weight: 400; font-size: 20px; letter-spacing: 0.08em; color: var(--brand); margin-left: 2px; }
+.logo-dot { font-family: var(--font-sans); font-weight: 900; font-size: 22px; color: var(--leaf); margin-left: 2px; transition: transform 0.5s var(--ease); }
+.status-pill { font-size: 11px; font-weight: 700; color: var(--leaf); display: flex; align-items: center; background: rgba(52,199,89,0.1); padding: 6px 12px; border-radius: 99px; border: 1px solid rgba(52,199,89,0.2); transition: 0.3s; }
+
+.pane { display: none; animation: fadeIn 0.3s var(--ease); padding-top: 8px; }
+.pane.on { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.sec-title { margin: 16px 20px; font-family: var(--font-serif-en); font-style: italic; font-weight: 600; font-size: 26px; }
+
+.hero { padding: 4px 20px 24px; }
+.hero-cover { width: 100%; height: 200px; border-radius: 12px; background: var(--bg-card) url('hero.jpg') center/cover; margin-bottom: 24px; }
+.hero-title { font-family: var(--font-serif-en); font-weight: 600; font-size: 32px; color: var(--ink); line-height: 1.1; }
+.hero-desc { font-family: var(--font-serif-jp); font-weight: 600; font-size: 14px; color: var(--ink-sub); margin-top: 8px; }
+
+.menu-list { display: flex; flex-direction: column; gap: 48px; margin-bottom: 40px; }
+.item-wrap { padding: 0 20px; cursor: pointer; text-align: left; }
+.item-img { width: 100%; aspect-ratio: 1/1; border-radius: 12px; background: var(--bg-card) center/cover; margin-bottom: 16px; position: relative; }
+.item-name { font-family: var(--font-serif-jp); font-weight: 700; font-size: 22px; line-height: 1.4; }
+.item-price { font-weight: 600; font-size: 16px; color: var(--ink-sub); margin-top: 4px; }
+.stock-warn { font-weight: 700; font-size: 13px; color: var(--alert); margin-top: 6px; }
+.sold-out { position: absolute; inset: 0; background: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 20px; letter-spacing: 0.1em; border-radius: 12px; backdrop-filter: blur(2px); }
+
+.tabbar { position: fixed; bottom: 0; z-index: 40; height: var(--tabbar-h); padding-bottom: var(--safe-bottom); background: rgba(255,255,255,0.85); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-top: 0.5px solid var(--line); display: flex; align-items: center; justify-content: space-around; width: 100%; max-width: var(--max-w); left: 50%; transform: translateX(-50%);}
+.tab { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; color: #A0A0A0; width: 80px; }
+.tab.on { color: var(--ink); }
+
+.cartbar { position: fixed; bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 16px); z-index: 41; width: calc(100% - 40px); max-width: calc(var(--max-w) - 40px); left: 50%; margin-left: 0; background: rgba(255,255,255,0.95); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border: 1px solid var(--line); border-radius: 99px; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: translate(-50%, 150%); opacity: 0; visibility: hidden; pointer-events: none; transition: transform 0.4s var(--ease), opacity 0.3s, visibility 0.4s; }
+.cartbar.show { transform: translate(-50%, 0); opacity: 1; visibility: visible; pointer-events: auto; }
+.cart-l { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 14px; }
+.cart-badge { background: var(--ink); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+.cart-r { font-weight: 700; }
+
+.veil { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,0.4); opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+.veil.on { opacity: 1; pointer-events: auto; }
+.sheet { position: fixed; bottom: 0; z-index: 61; width: 100%; max-width: var(--max-w); left: 50%; margin-left: 0; background: var(--bg); border-radius: 20px 20px 0 0; padding-bottom: var(--safe-bottom); transform: translate(-50%, 110%); visibility: hidden; transition: transform 0.4s var(--ease), visibility 0.4s ease; }
+.sheet.on { transform: translate(-50%, 0); visibility: visible; }
+.sh-grab { width: 36px; height: 4px; border-radius: 99px; background: #E0E0E0; margin: 10px auto 8px; }
+.sh-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 24px 16px; border-bottom: 1px solid var(--line); }
+.sh-head h3 { font-family: var(--font-serif-jp); font-weight: 700; font-size: 18px; }
+.sh-x { width: 32px; height: 32px; border-radius: 50%; background: var(--bg-card); display: flex; align-items: center; justify-content: center; color: var(--ink-sub); }
+.sh-body { padding: 24px; max-height: 80vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+.qty-ctrl { display: flex; align-items: center; justify-content: space-between; background: var(--bg-card); padding: 16px 20px; border-radius: 12px; margin-bottom: 24px; font-weight: 600; }
+.q-btns { display: flex; align-items: center; gap: 20px; }
+.q-btn { width: 32px; height: 32px; border-radius: 50%; background: var(--bg); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+.q-num { font-size: 18px; font-weight: 700; min-width: 20px; text-align: center; }
+
+.cta { width: 100%; padding: 16px; border-radius: 12px; background: var(--ink); color: #fff; font-weight: 700; font-size: 15px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.cta.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.cta.disabled { opacity: 0.5; pointer-events: none; }
+
+.opt-lbl { font-weight: 600; font-size: 13px; margin-bottom: 12px; display: block; color: var(--ink-sub); }
+.opts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+.opt { padding: 14px; border: 1px solid var(--line); border-radius: 10px; font-weight: 600; font-size: 14px; text-align: center; background: var(--bg); }
+.opt.sel { border-color: var(--ink); border-width: 2px; padding: 13px; }
+
+.pay-sec-label { font-size: 12px; font-weight: 700; color: var(--ink-sub); margin-bottom: 10px; letter-spacing: 0.04em; }
+.pay-divider { display: flex; align-items: center; text-align: center; color: var(--ink-sub); font-size: 12px; font-weight: 600; margin: 20px 0; }
+.pay-divider::before, .pay-divider::after { content: ''; flex: 1; border-bottom: 1px solid var(--line); }
+.pay-divider span { padding: 0 12px; }
+.sq-card-wrapper { margin-bottom: 16px; min-height: 90px; background: var(--bg-card); padding: 12px; border-radius: 12px; border: 1px solid var(--line); }
+.secure-notice { font-size: 11px; color: var(--ink-sub); line-height: 1.5; margin-bottom: 16px; background: var(--bg-card); padding: 12px; border-radius: 8px; }
+
+#apple-pay-button {
+  display: block;
+  width: 100%;
+  height: 48px;
+  border-radius: 10px;
+  cursor: pointer;
+  -webkit-appearance: -apple-pay-button;
+  -apple-pay-button-type: plain;
+  -apple-pay-button-style: black;
+}
+
+.trk-wrap { padding-bottom: 32px; margin: 0 20px 32px; border-bottom: 1px solid var(--line); }
+.trk-wrap:last-child { border-bottom: none; }
+.trk-head { display: flex; justify-content: space-between; margin-bottom: 16px; align-items: center; }
+.trk-ti { font-weight: 700; font-size: 16px; font-family: var(--font-serif-jp); display: flex; align-items: center; gap: 8px; }
+.trk-id { font-size: 13px; font-weight: 600; color: var(--ink-sub); }
+.unpaid-box { background: rgba(255,149,0,0.12); border: 1px solid rgba(255,149,0,0.4); color: #C97400; padding: 12px; border-radius: 10px; font-size: 13px; font-weight: 700; margin-bottom: 16px; text-align: center; }
+
+.trk { position: relative; display: flex; justify-content: space-between; margin: 0 10px; }
+.trk::before { content: ''; position: absolute; top: 12px; left: 0; right: 0; height: 3px; background: var(--line); z-index: 1; border-radius: 2px; }
+.trk-fill { position: absolute; top: 12px; left: 0; height: 3px; background: var(--brand); z-index: 2; border-radius: 2px; transition: width 0.6s var(--ease); }
+
+.trk-step { position: relative; z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 11px; color: var(--ink-sub); font-weight: 600; }
+.trk-dot { width: 28px; height: 28px; border-radius: 50%; background: var(--line); border: 3px solid var(--bg); display: flex; align-items: center; justify-content: center; color: transparent; transition: 0.3s; }
+.trk-dot svg { width: 14px; height: 14px; }
+.trk-step.act .trk-dot { background: var(--brand); color: #fff; transform: scale(1.1); box-shadow: 0 0 0 4px rgba(90,139,156,0.2); }
+.trk-step.act { color: var(--ink); font-weight: 700; }
+.trk-step.warn .trk-dot { background: var(--warn); color: #fff; transform: scale(1.1); box-shadow: 0 0 0 4px rgba(255,149,0,0.2); }
+.trk-step.warn { color: #C97400; font-weight: 700; }
+.trk-step.done .trk-dot { background: var(--brand); color: #fff; }
+.trk-step.done { color: var(--ink); }
+.trk-items { margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--line); font-size: 14px; font-weight: 600; line-height: 1.8; }
+
+.link-card { display: flex; align-items: center; padding: 16px; background: var(--bg-card); border-radius: 12px; margin-bottom: 12px; }
+.link-card svg { margin-right: 16px; color: var(--brand); }
+
+#success { position: fixed; inset: 0; z-index: 99999; background: var(--brand); color: #fff; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: 0.5s; pointer-events: none; }
+#success.on { opacity: 1; visibility: visible; pointer-events: auto; }
+.suc-in { text-align: center; transform: scale(0.95); transition: 0.6s var(--ease); padding: 0 24px; }
+#success.on .suc-in { transform: scale(1); }
+.suc-ic { position: relative; width: 64px; height: 64px; margin: 0 auto 24px; }
+.suc-ic svg { width: 100%; height: 100%; }
+.steam { position: absolute; top: -12px; left: 0; right: 0; display: flex; justify-content: center; gap: 6px; }
+.steam span { width: 2px; height: 14px; background: rgba(255,255,255,0.8); border-radius: 99px; opacity: 0; animation: stm 2s infinite ease-in-out; }
+.steam span:nth-child(2){ animation-delay: 0.3s; }
+.steam span:nth-child(3){ animation-delay: 0.6s; }
+@keyframes stm { 0%{transform:translateY(6px) scaleY(0.5);opacity:0;} 50%{opacity:1;} 100%{transform:translateY(-16px) scaleY(1.5);opacity:0;filter:blur(2px);} }
+.suc-ti { font-family: var(--font-serif-en); font-size: 36px; font-style: italic; font-weight: 600; margin-bottom: 12px; }
+.suc-msg { font-family: var(--font-serif-jp); font-size: 15px; opacity: 0.95; margin-bottom: 24px; line-height: 1.7; }
+.suc-oid { font-weight: 700; font-size: 28px; letter-spacing: 0.05em; background: rgba(0,0,0,0.15); padding: 12px 24px; border-radius: 12px; display: inline-block; }
+
+.toast { position: fixed; top: 20px; left: 50%; transform: translate(-50%, -100%); background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 99px; font-weight: 600; font-size: 13px; opacity: 0; transition: 0.3s var(--ease); z-index: 999999; max-width: 90vw; text-align: center; }
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+.login-input { width: 100%; padding: 16px; border: 1px solid var(--line); border-radius: 12px; font-size: 16px; background: var(--bg-card); outline: none; margin-bottom: 16px; font-family: var(--font-sans); }
+
+#kds { display: none; position: fixed; inset: 0; z-index: 100000; background: #000; color: #fff; overflow-y: auto; padding-bottom: 40px; }
+#kds.on { display: block; }
+.k-hd { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid #333; position: sticky; top: 0; background: #000; z-index: 10; }
+.k-sec { padding: 24px; }
+.k-card { background: #1C1C1E; border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+.k-btn { background: var(--leaf); color: #000; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 13px; }
+.k-btn.warn { background: var(--warn); color: #000; }
+.k-btn.gh { background: transparent; color: #fff; border: 1px solid #555; }
+.rm-order-btn { display: block; width: 100%; padding: 12px; margin-top: 16px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--ink-sub); font-size: 13px; font-weight: 600; text-align: center; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="i-cup" viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8zM6 1v3M10 1v3M14 1v3"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></symbol>
+  <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2H4zM8 8h8M8 12h8M8 16h4"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-ig" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><path d="M17.5 6.5h.01"/></symbol>
+  <symbol id="i-pod" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M12 2a10 10 0 0 0-10 10 10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2zM12 6a6 6 0 0 0-6 6M12 9a3 3 0 0 0-3 3"/></symbol>
+  <symbol id="i-web" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"/></symbol>
+</defs>
+</svg>
+
+<div id="splash">
+  <div class="logo-wrap-splash">
+    <span class="logo-biko">BIKO</span><span class="logo-ken">KEN</span><span class="logo-dot">.</span>
+  </div>
+  <div class="splash-sub">Gastronomy &amp; Coffee</div>
+</div>
+
+<div id="app">
+  <div class="header">
+    <div class="header-in">
+      <button class="header-logo tap" id="logoTap" title="KDS">
+        <div class="logo-wrap">
+          <span class="logo-b">B</span>
+          <span class="logo-rest"><span class="logo-iko">IKO</span><span class="logo-ken">KEN</span></span>
+          <span class="logo-dot">.</span>
+        </div>
+      </button>
+      <div class="status-pill" id="syncPill" style="color:var(--ink-sub); border-color:var(--line); background:var(--bg-card);">約 <span id="hdWait" style="margin:0 2px;">8</span> 分待ち</div>
+    </div>
+  </div>
+
+  <section class="pane on" id="p-menu">
+    <div id="stop-banner" style="display:none; margin: 8px 20px 16px; background: rgba(255,59,48,0.1); color: var(--alert); border: 1px solid rgba(255,59,48,0.3); border-radius: 8px; padding: 12px; text-align: center; font-weight: 700; font-size: 13px;">
+      ただいま混雑のため一時的に注文受付を停止しております
+    </div>
+    
+    <div class="hero">
+      <div class="hero-cover"></div>
+      <div class="hero-title">Gastronomy &amp; Coffee</div>
+      <div class="hero-desc">法政大学 美食・珈琲研究会</div>
+    </div>
+    <div class="sec-title">Menu</div>
+    <div id="menuWrap" class="menu-list"></div>
+  </section>
+
+  <section class="pane" id="p-orders">
+    <div class="sec-title">Orders</div>
+    <div id="orderWrap" style="padding-bottom: 60px;"></div>
+  </section>
+
+  <section class="pane" id="p-biko">
+    <div class="sec-title">Bikoken</div>
+    <div style="margin: 0 20px;">
+      <a href="https://www.instagram.com/hosei_bisyoku_coffee/" target="_blank" rel="noopener noreferrer" class="link-card tap"><svg class="ic"><use href="#i-ig"/></svg><div style="flex:1"><b>Instagram</b><div style="font-size:11px;color:var(--ink-sub)">@hosei_bisyoku_coffee</div></div></a>
+      <a href="https://open.spotify.com/show/3tBeEl3rCe1qM9wNPzQnEP" target="_blank" rel="noopener noreferrer" class="link-card tap"><svg class="ic"><use href="#i-pod"/></svg><div style="flex:1"><b>Podcast</b><div style="font-size:11px;color:var(--ink-sub)">Spotifyにて配信中</div></div></a>
+      <a href="https://bisyokucoffee-circle.studio.site/" target="_blank" rel="noopener noreferrer" class="link-card tap"><svg class="ic"><use href="#i-web"/></svg><div style="flex:1"><b>Website</b><div style="font-size:11px;color:var(--ink-sub)">活動内容まとめ</div></div></a>
+    </div>
+  </section>
+
+  <div class="tabbar">
+    <button class="tab on tap" data-tab="menu"><svg class="ic"><use href="#i-menu"/></svg>Menu</button>
+    <button class="tab tap" data-tab="orders"><svg class="ic"><use href="#i-receipt"/></svg>Orders</button>
+    <button class="tab tap" data-tab="biko"><svg class="ic"><use href="#i-info"/></svg>Bikoken</button>
+  </div>
+
+  <div class="cartbar tap" id="cartBar">
+    <div class="cart-l"><div class="cart-badge" id="cCnt">0</div><div>カートを確認</div></div>
+    <div class="cart-r">¥<span id="cAmt">0</span> ›</div>
+  </div>
+
+  <div class="veil" id="veil"></div>
+
+  <div class="sheet" id="sh-item">
+    <div class="sh-grab"></div>
+    <div class="sh-head"><h3 id="iName"></h3><button class="sh-x tap" data-close><svg><use href="#i-close"/></svg></button></div>
+    <div class="sh-body">
+      <div id="iOpts"></div>
+      <div id="iStockWarn" style="color: var(--alert); font-weight: 700; font-size: 13px; margin-bottom: 12px; display: none; background: rgba(255,59,48,0.1); padding: 8px; border-radius: 8px; text-align: center;"></div>
+      <div class="qty-ctrl">
+        <span>数量</span>
+        <div class="q-btns"><button class="q-btn tap" id="qSub">-</button><div class="q-num" id="qVal">1</div><button class="q-btn tap" id="qAdd">+</button></div>
+      </div>
+      <button class="cta tap" id="addBtn">カートに追加 <span id="iTotal">¥0</span></button>
+    </div>
+  </div>
+
+  <div class="sheet" id="sh-cart">
+    <div class="sh-grab"></div>
+    <div class="sh-head"><h3>カート</h3><button class="sh-x tap" data-close><svg><use href="#i-close"/></svg></button></div>
+    <div class="sh-body">
+      <div id="cLines"></div>
+      <div style="display:flex;justify-content:space-between;font-weight:700;font-size:18px;margin:24px 0"><span>合計</span><span id="cSum">¥0</span></div>
+      <button class="cta tap" id="goPay">決済へ進む</button>
+    </div>
+  </div>
+
+  <div class="sheet" id="sh-pay">
+    <div class="sh-grab"></div>
+    <div class="sh-head"><h3>お支払い</h3><button class="sh-x tap" data-close><svg><use href="#i-close"/></svg></button></div>
+    <div class="sh-body">
+      <div id="apple-pay-container" style="display:none; margin-bottom: 20px;">
+        <div class="pay-sec-label">エクスプレスチェックアウト</div>
+        <button id="apple-pay-button" type="button" aria-label="Apple Payで支払う"></button>
+        <div class="pay-divider"><span>またはクレジットカードで支払う</span></div>
+      </div>
+
+      <div class="pay-sec-label">クレジットカード決済</div>
+      <div class="secure-notice">
+        カード情報は決済代行会社(Square)により暗号化され安全に処理されます。当サイトがカード情報を保持することはありません。
+      </div>
+      <div id="card-container" class="sq-card-wrapper"></div>
+      <button class="cta tap" id="card-button">クレジットカードで決済する</button>
+
+      <div class="pay-divider"><span>または</span></div>
+      <button class="cta ghost tap" id="store-pay-button" onclick="doOrder('店頭決済')">店頭でお支払い (レジで会計後に調理)</button>
+    </div>
+  </div>
+
+  <div class="sheet" id="sh-login">
+    <div class="sh-grab"></div>
+    <div class="sh-head"><h3>スタッフログイン</h3><button class="sh-x tap" data-close><svg><use href="#i-close"/></svg></button></div>
+    <div class="sh-body">
+      <input type="password" id="staffPass" class="login-input" placeholder="パスワードを入力してください">
+      <button class="cta tap" onclick="doLogin()">ログイン</button>
+    </div>
+  </div>
+
+  <div id="success">
+    <div class="suc-in">
+      <div class="suc-ic"><div class="steam"><span></span><span></span><span></span></div><svg><use href="#i-cup"/></svg></div>
+      <div class="suc-ti" id="sTitle">Thank you!</div>
+      <div class="suc-msg" id="sMsg">ご注文ありがとうございます。<br>心を込めてお作りします。</div>
+      <div class="suc-oid" id="sOid"></div>
+    </div>
+  </div>
+</div>
+
+<div id="kds">
+  <div class="k-hd">
+    <div style="font-weight: 700; font-size: 16px;">KDS / <span id="kdsSyncStatus" style="font-size:12px; color:#888;">Local Mode</span></div>
+    <div style="display:flex; gap:12px; align-items:center;">
+      <button class="k-btn gh tap" id="kdsToggleBtn" onclick="toggleAccepting()" style="border-color:var(--leaf); color:var(--leaf);">注文受付中</button>
+      <button class="k-btn gh tap" onclick="exitKds()">閉じる</button>
+    </div>
+  </div>
+  <div class="k-sec">
+    <h2 style="font-size: 13px; color: #888; margin-bottom: 8px;">待ち時間設定</h2>
+    <div class="k-card">
+      <div>現在の設定: <span id="kWait" style="color:#fff; font-weight:bold;">8</span>分</div>
+      <div style="display:flex;gap:8px"><button class="k-btn gh tap" onclick="setWait(-1)">-1</button><button class="k-btn gh tap" onclick="setWait(1)">+1</button></div>
+    </div>
+  </div>
+  <div class="k-sec">
+    <h2 style="font-size: 13px; color: #888; margin-bottom: 8px;">在庫管理</h2>
+    <div id="kStock"></div>
+  </div>
+  <div class="k-sec">
+    <h2 style="font-size: 13px; color: #888; margin-bottom: 8px;">注文リスト</h2>
+    <div id="kOrders"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+const SQUARE_APP_ID = "sq0idp-8RwnZ9Y0HEiuuxUOKom7XA";
+const SQUARE_LOCATION_ID = "LRYBX5AH6PHXB";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyALp5cInmwNrxI_rKFZsaPxysjQEvMxXo",
+  authDomain: "bikokenn-cafe.firebaseapp.com",
+  databaseURL: "https://bikokenn-cafe-default-rtdb.firebaseio.com",
+  projectId: "bikokenn-cafe",
+  storageBucket: "bikokenn-cafe.firebasestorage.app",
+  messagingSenderId: "231995673104",
+  appId: "1:231995673104:web:052c85ec85c2c8877bd895",
+  measurementId: "G-SCXRMJCCZS"
+};
+
+const IS_SYNC_READY = firebaseConfig.apiKey !== "YOUR_API_KEY" && firebaseConfig.apiKey !== "";
+let dbRef = null;
+
+if (IS_SYNC_READY) {
+  firebase.initializeApp(firebaseConfig);
+  dbRef = firebase.database().ref('bikoken');
+}
+
+const MENU = [
+  { id: 'm1', payId: 'm1', name: 'フルーツシロップソーダ(ハイビスカス)', price: 350, img: 'hibiscus.jpg', stock: 20 },
+  { id: 'm4', payId: 'm4', name: 'フルーツシロップソーダ(カシス)', price: 350, img: 'cassis.jpg', stock: 20 },
+  { id: 'm2', payId: 'm2', name: 'カシスウーロン(ソフトドリンク)', price: 350, stock: 15, img: 'oolong.jpg' },
+  { id: 'm3', payId: 'm3', name: 'アイスコーヒー', price: 300, stock: 30, img: 'coffee.jpg' }
+];
+
+let ST = { wait: 8, stk: {}, ord: [], isAccepting: true };
+MENU.forEach(m => ST.stk[m.id] = m.stock);
+let CA = [];
+let isOrdering = false;
+
+let myOrders = [];
+let hiddenOrders = [];
+try {
+  myOrders = JSON.parse(localStorage.getItem('biko_my_orders') || '[]');
+  hiddenOrders = JSON.parse(localStorage.getItem('biko_hidden_orders') || '[]');
+} catch (e) {
+  myOrders = [];
+  hiddenOrders = [];
+}
+
+function saveLocalOrders() {
+  try {
+    localStorage.setItem('biko_my_orders', JSON.stringify(myOrders));
+    localStorage.setItem('biko_hidden_orders', JSON.stringify(hiddenOrders));
+  } catch (e) {}
+}
+
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+
+function formatErr(err) {
+  if (!err) return "決済エラーが発生しました";
+  if (typeof err === "string") return err;
+  if (Array.isArray(err)) return formatErr(err[0]);
+  if (typeof err === "object") {
+    return err.detail || err.message || err.code || JSON.stringify(err);
+  }
+  return String(err);
+}
+
+function toast(m) {
+  $('#toast').textContent = formatErr(m);
+  $('#toast').classList.add('on');
+  setTimeout(()=>$('#toast').classList.remove('on'), 3500);
+}
+
+function getTimeStr() {
+  const now = new Date();
+  return String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+}
+
+if (IS_SYNC_READY) {
+  dbRef.on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      ST.wait = data.wait ?? 8;
+      ST.stk = data.stk || {};
+      MENU.forEach(m => {
+        if (ST.stk[m.id] === undefined) {
+          ST.stk[m.id] = m.stock;
+          dbRef.child('stk/' + m.id).set(m.stock);
+        }
+      });
+      ST.isAccepting = data.isAcceptingOrders ?? true;
+      if (data.ord) {
+        ST.ord = Object.values(data.ord).sort((a,b) => a.ts - b.ts);
+      } else {
+        ST.ord = [];
+      }
+      rMenu(); rOrd(); rK(); updateAcceptingUI();
+      
+      $('#syncPill').style.color = "var(--leaf)";
+      $('#syncPill').style.borderColor = "rgba(52,199,89,0.2)";
+      $('#syncPill').style.background = "rgba(52,199,89,0.1)";
+      $('#kdsSyncStatus').textContent = "Live Sync";
+      $('#kdsSyncStatus').style.color = "var(--leaf)";
+    } else {
+      const initialData = { wait: 8, stk: {}, ord: {}, isAcceptingOrders: true };
+      MENU.forEach(m => initialData.stk[m.id] = m.stock);
+      dbRef.set(initialData);
+    }
+  });
+}
+
+function updateAcceptingUI() {
+  const banner = $('#stop-banner');
+  const addBtn = $('#addBtn');
+  const goPay = $('#goPay');
+  const kToggle = $('#kdsToggleBtn');
+
+  if (!ST.isAccepting) {
+    if (banner) banner.style.display = 'block';
+    if (addBtn) { addBtn.classList.add('disabled'); addBtn.textContent = '受付停止中'; }
+    if (goPay) { goPay.classList.add('disabled'); goPay.textContent = '受付停止中'; }
+    if (kToggle) {
+      kToggle.textContent = '受付停止中';
+      kToggle.style.color = 'var(--alert)';
+      kToggle.style.borderColor = 'var(--alert)';
+    }
+  } else {
+    if (banner) banner.style.display = 'none';
+    if (addBtn) { 
+      addBtn.classList.remove('disabled'); 
+      if (CS && CS.i) { uQ(); chk(); } else { addBtn.innerHTML = 'カートに追加 <span id="iTotal">¥0</span>'; }
+    }
+    if (goPay) { goPay.classList.remove('disabled'); goPay.textContent = '決済へ進む'; }
+    if (kToggle) {
+      kToggle.textContent = '注文受付中';
+      kToggle.style.color = 'var(--leaf)';
+      kToggle.style.borderColor = 'var(--leaf)';
+    }
+  }
+}
+
+window.toggleAccepting = () => {
+  const nSt = !ST.isAccepting;
+  if (IS_SYNC_READY) dbRef.child('isAcceptingOrders').set(nSt);
+  else { ST.isAccepting = nSt; updateAcceptingUI(); }
+};
+
+let ticking = false;
+window.addEventListener('scroll', () => {
+  if (!ticking) {
+    window.requestAnimationFrame(() => {
+      if (window.scrollY > 30) { $('.header').classList.add('scrolled'); } 
+      else { $('.header').classList.remove('scrolled'); }
+      ticking = false;
+    });
+    ticking = true;
+  }
+});
+
+function getCartQtyById(id) {
+  return CA.filter(c => c.id === id).reduce((sum, c) => sum + c.q, 0);
+}
+
+function validateCartStock() {
+  const totals = {};
+  for (const c of CA) {
+    totals[c.id] = (totals[c.id] || 0) + c.q;
+  }
+  for (const id of Object.keys(totals)) {
+    const avail = ST.stk[id] || 0;
+    if (totals[id] > avail) {
+      const item = MENU.find(m => m.id === id);
+      toast(`${item ? item.name : '商品'} の在庫が不足しています（残り${avail}杯）`);
+      return false;
+    }
+  }
+  return true;
+}
+
+function rMenu() {
+  $('#menuWrap').innerHTML = MENU.map(m => {
+    const st = ST.stk[m.id] || 0;
+    const out = st <= 0;
+    const wrn = !out && st <= 5 ? `<div class="stock-warn">残りわずか（${st}杯）</div>` : '';
+    return `<button class="item-wrap tap" onclick="opI('${m.id}')" style="${out ? 'opacity:0.5;pointer-events:none' : ''}">
+      <div class="item-img" style="background-image:url('${m.img}')">${out ? '<div class="sold-out">SOLD OUT</div>' : ''}</div>
+      <div class="item-name">${m.name}</div>
+      <div class="item-price">¥${m.price}</div>
+      ${wrn}
+    </button>`;
+  }).join('');
+  $('#hdWait').textContent = ST.wait;
+}
+
+let oSh = null;
+function showSh(s) { if(oSh) oSh.classList.remove('on'); oSh = $(s); oSh.classList.add('on'); $('#veil').classList.add('on'); document.body.style.overflow='hidden'; }
+window.cloSh = () => { 
+  if(oSh) oSh.classList.remove('on'); 
+  $('#veil').classList.remove('on'); 
+  document.body.style.overflow=''; 
+  oSh=null; 
+};
+$('#veil').addEventListener('click', cloSh);
+$$('[data-close]').forEach(b=>b.addEventListener('click', cloSh));
+
+let CS = { i: null, q: 1, s: {} };
+window.opI = (id) => {
+  if (!ST.isAccepting) { toast('現在注文受付を停止しています'); return; }
+  const m = MENU.find(x => x.id === id);
+  const avail = (ST.stk[id] || 0) - getCartQtyById(id);
+  if (!m || (ST.stk[id] || 0) <= 0) return;
+  if (avail <= 0) { toast('これ以上カートに追加できません（在庫上限）'); return; }
+
+  CS = { i: m, q: 1, s: {} };
+  $('#iName').textContent = m.name;
+  
+  const st = ST.stk[m.id] || 0;
+  const warnEl = $('#iStockWarn');
+  if (st <= 5 && st > 0) {
+    warnEl.textContent = `残りわずか（${st}杯）`;
+    warnEl.style.display = 'block';
+  } else {
+    warnEl.style.display = 'none';
+  }
+
+  if(m.opts) {
+    $('#iOpts').innerHTML = m.opts.map((g,gi) => `<div class="opt-group"><span class="opt-lbl">${g.q}</span><div class="opts">${g.o.map((o,oi)=>`<button class="opt tap" data-g="${gi}" data-o="${oi}">${o}</button>`).join('')}</div></div>`).join('');
+    $$('.opt').forEach(b => b.addEventListener('click', () => {
+      const g = m.opts[+b.dataset.g]; CS.s[g.k] = g.o[+b.dataset.o];
+      $$(`.opt[data-g="${b.dataset.g}"]`).forEach(x => x.classList.toggle('sel', x===b));
+      chk();
+    }));
+  } else $('#iOpts').innerHTML = '';
+  uQ(); chk(); showSh('#sh-item');
+};
+
+function getMaxAddable() {
+  if (!CS.i) return 1;
+  const remain = (ST.stk[CS.i.id] || 0) - getCartQtyById(CS.i.id);
+  return Math.max(0, Math.min(9, remain));
+}
+
+function uQ() {
+  const max = getMaxAddable();
+  if (CS.q > max && max > 0) CS.q = max;
+  $('#qVal').textContent = CS.q;
+  $('#iTotal').textContent = `¥${CS.i.price * CS.q}`;
+  $('#qSub').disabled = CS.q <= 1;
+  $('#qAdd').disabled = CS.q >= max;
+}
+$('#qSub').addEventListener('click', ()=>{ if(CS.q>1){CS.q--;uQ();} });
+$('#qAdd').addEventListener('click', ()=>{ const max = getMaxAddable(); if(CS.q<max){CS.q++;uQ();} });
+function chk() {
+  if (!CS.i) return;
+  const optMissing = !CS.i.opts ? false : CS.i.opts.some(g => g.req && !CS.s[g.k]);
+  const noStock = getMaxAddable() <= 0;
+  $('#addBtn').classList.toggle('disabled', optMissing || noStock || !ST.isAccepting);
+}
+
+$('#addBtn').addEventListener('click', ()=>{
+  if (!ST.isAccepting) { toast('現在注文受付を停止しています'); cloSh(); return; }
+  if (CS.q > getMaxAddable()) { toast('在庫が不足しています'); return; }
+  const spText = CS.i.opts ? CS.i.opts.map(g => CS.s[g.k]).filter(Boolean).join(' / ') : '';
+  CA.push({ id: CS.i.id, payId: CS.i.payId || CS.i.id, nm: CS.i.name, pr: CS.i.price, q: CS.q, sp: spText });
+  uC(); cloSh(); toast('カートに追加しました');
+});
+
+function uC() {
+  const n = CA.reduce((a,c)=>a+c.q,0); const amt = CA.reduce((a,c)=>a+(c.pr*c.q),0);
+  if(n>0) { $('#cartBar').classList.add('show'); $('#cCnt').textContent = n; $('#cAmt').textContent = amt; }
+  else $('#cartBar').classList.remove('show');
+}
+
+$('#cartBar').addEventListener('click', ()=>{
+  if(!CA.length) return;
+  $('#cLines').innerHTML = CA.map((c,i)=>`<div style="display:flex;justify-content:space-between;padding:16px 0;border-bottom:1px dashed #e5e5ea"><div><b>${c.nm}</b> <span style="color:#888;font-size:12px">×${c.q}</span>${c.sp ? `<br><span style="font-size:11px;color:#888">${c.sp}</span>` : ''}</div><div style="display:flex;gap:16px;align-items:center"><b>¥${c.pr*c.q}</b><button class="tap" style="color:#f33;font-size:12px;font-weight:700" onclick="rm(${i})">削除</button></div></div>`).join('');
+  $('#cSum').textContent = `¥${CA.reduce((a,c)=>a+(c.pr*c.q),0)}`; showSh('#sh-cart');
+});
+window.rm = (i) => { CA.splice(i,1); uC(); if(!CA.length) cloSh(); else $('#cartBar').click(); };
+
+let payments, card, applePay, paymentRequest;
+async function initSquare() {
+  if (!window.Square) return;
+  try {
+    payments = window.Square.payments(SQUARE_APP_ID, SQUARE_LOCATION_ID);
+    card = await payments.card();
+    await card.attach('#card-container');
+
+    paymentRequest = payments.paymentRequest({
+      countryCode: 'JP',
+      currencyCode: 'JPY',
+      total: { amount: '350', label: 'BIKOKEN Cafe' }
+    });
+
+    try {
+      applePay = await payments.applePay(paymentRequest);
+      $('#apple-pay-container').style.display = 'block';
+    } catch(e) {
+      console.warn('Apple Pay 利用不可:', e);
+      $('#apple-pay-container').style.display = 'none';
+    }
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+$('#goPay').addEventListener('click', ()=>{ 
+  if (!ST.isAccepting) { toast('現在注文受付を停止しています'); cloSh(); return; }
+  if (!validateCartStock()) return;
+  cloSh(); 
+  setTimeout(()=>{
+    if (paymentRequest) {
+      try {
+        const amt = CA.reduce((a,c)=>a+(c.pr*c.q),0);
+        paymentRequest.update({
+          total: { amount: String(amt), label: 'BIKOKEN Cafe' }
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    showSh('#sh-pay');
+  }, 300); 
+});
+
+$('#card-button').addEventListener('click', async (event) => {
+  event.preventDefault();
+  if (!card || isOrdering) return;
+  if (!ST.isAccepting) { toast('現在注文受付を停止しています'); return; }
+  if (!validateCartStock()) return;
+
+  isOrdering = true;
+  const btn = $('#card-button');
+  btn.classList.add('disabled');
+  btn.textContent = "決済処理中...";
+
+  try {
+    const result = await card.tokenize();
+    if (result.status === 'OK') {
+      await processPaymentToken(result.token);
+    } else {
+      const errMsg = result.errors && result.errors[0] ? result.errors[0].message : "カード情報が正しくありません";
+      toast(errMsg);
+    }
+  } catch (e) {
+    console.error(e);
+    toast("決済通信エラーが発生しました");
+  } finally {
+    isOrdering = false;
+    btn.classList.remove('disabled');
+    btn.textContent = "クレジットカードで決済する";
+  }
+});
+
+document.getElementById('apple-pay-button').addEventListener('click', async (event) => {
+  event.preventDefault();
+  if (!applePay || isOrdering) return;
+  if (!ST.isAccepting) { toast('現在注文受付を停止しています'); return; }
+  if (!validateCartStock()) return;
+
+  isOrdering = true;
+  try {
+    const result = await applePay.tokenize();
+    if (result.status === 'OK') {
+      await processPaymentToken(result.token);
+    } else if (result.errors && result.errors.length > 0) {
+      toast(result.errors[0].message || "Apple Pay認証がキャンセルされました");
+    }
+  } catch (e) {
+    console.error(e);
+    toast("Apple Pay決済中にエラーが発生しました");
+  } finally {
+    isOrdering = false;
+  }
+});
+
+async function processPaymentToken(token) {
+  const secureCartData = CA.map(c => ({ id: c.id, q: c.q, sp: c.sp || '' }));
+  const totalAmt = CA.reduce((a,c)=>a+(c.pr*c.q),0);
+
+  const response = await fetch('/api/payment', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      sourceId: token,
+      amount: totalAmt,
+      cartItems: secureCartData
+    })
+  });
+
+  let data = {};
+  try {
+    data = await response.json();
+  } catch (e) {
+    toast("サーバー応答エラー (" + response.status + ")");
+    return;
+  }
+
+  if (response.ok && data.success) {
+    if (data.orderId) {
+      // サーバー側で注文が作られた場合も、念のためフロント側からもルール準拠データを保証
+      const oData = data.order || {
+        id: data.orderId,
+        md: '事前決済',
+        tm: getTimeStr(),
+        it: [...CA],
+        st: 'new',
+        ts: Date.now()
+      };
+      if (IS_SYNC_READY) {
+        dbRef.child('ord/' + data.orderId).set(oData);
+      }
+      finishOrderUI(data.orderId, '事前決済', oData);
+    } else {
+      executeOrder('事前決済');
+    }
+  } else {
+    toast(formatErr(data.error) || "決済が承認されませんでした");
+  }
+}
+
+window.doOrder = (md) => {
+  if (isOrdering) return;
+  if (!ST.isAccepting) { toast('現在注文受付を停止しています'); cloSh(); return; }
+  if (!validateCartStock()) { cloSh(); return; }
+  executeOrder(md);
+};
+
+function finishOrderUI(oid, md = '事前決済', oData = null) {
+  if (!myOrders.includes(oid)) {
+    myOrders.push(oid);
+    saveLocalOrders();
+  }
+  if (oData && !ST.ord.some(x => x.id === oid)) {
+    ST.ord.push(oData);
+  }
+  CA = []; uC(); cloSh();
+  rMenu(); rOrd(); rK();
+  
+  if (md.startsWith('店頭決済')) {
+    $('#sTitle').textContent = 'Proceed to Cashier';
+    $('#sMsg').innerHTML = '仮受付いたしました。<br><b>レジにて番号をお伝えいただき、お支払い後に調理を開始いたします。</b>';
+  } else {
+    $('#sTitle').textContent = 'Thank you!';
+    $('#sMsg').innerHTML = 'ご注文ありがとうございます。<br>心を込めてお作りします。';
+  }
+
+  $('#sOid').textContent = oid; $('#success').classList.add('on');
+  setTimeout(()=>{
+    $('#success').classList.remove('on');
+    $$('.tab').forEach(x=>x.classList.toggle('on', x.dataset.tab==='orders'));
+    $$('.pane').forEach(p=>p.classList.toggle('on', p.id==='p-orders'));
+    rOrd();
+    window.scrollTo(0,0);
+  }, 3200);
+}
+
+function executeOrder(md) {
+  if (!CA.length) return;
+  const oid = 'BIKO-' + Math.floor(1000+Math.random()*9000);
+  // Firebaseルールの st: new|prep|done|archived と 6項目制限に100%準拠
+  const initMd = md === '店頭決済' ? '店頭決済(未会計)' : '事前決済';
+  const oData = {
+    id: oid,
+    md: initMd,
+    tm: getTimeStr(),
+    it: [...CA],
+    st: 'new',
+    ts: Date.now()
+  };
+
+  if (!myOrders.includes(oid)) {
+    myOrders.push(oid);
+    saveLocalOrders();
+  }
+
+  const totalsById = {};
+  CA.forEach(c => {
+    totalsById[c.id] = (totalsById[c.id] || 0) + c.q;
+  });
+
+  if (IS_SYNC_READY) {
+    Object.keys(totalsById).forEach(id => {
+      const qtyToDeduct = totalsById[id];
+      dbRef.child('stk/' + id).transaction(currentStock => {
+        const cur = currentStock ?? (ST.stk[id] || 0);
+        return Math.max(0, cur - qtyToDeduct);
+      });
+    });
+    dbRef.child('ord/' + oid).set(oData);
+  } else {
+    Object.keys(totalsById).forEach(id => {
+      ST.stk[id] = Math.max(0, (ST.stk[id] || 0) - totalsById[id]);
+    });
+    ST.ord.push(oData);
+  }
+
+  finishOrderUI(oid, initMd, oData);
+}
+
+window.hideOrder = (oid) => {
+  hiddenOrders.push(oid);
+  saveLocalOrders();
+  rOrd();
+};
+
+function getOrderTotal(o) {
+  return (o.it || []).reduce((sum, c) => sum + ((c.pr || 0) * (c.q || 0)), 0);
+}
+
+function rOrd() {
+  const ar = $('#orderWrap');
+  const myCurrentOrders = ST.ord.filter(o => 
+    myOrders.includes(o.id) && 
+    !hiddenOrders.includes(o.id) && 
+    o.st !== 'archived'
+  );
+
+  if(!myCurrentOrders.length) { ar.innerHTML = '<div style="text-align:center;padding:40px 0;color:#888">注文はありません</div>'; return; }
+  ar.innerHTML = [...myCurrentOrders].reverse().map(o => {
+    const isUnpaid = o.md === '店頭決済(未会計)' && o.st === 'new';
+    const isP = o.st === 'prep' || o.st === 'done', isD = o.st === 'done';
+    const w = isD ? '100%' : (isP ? '50%' : '0%');
+    const totalAmt = getOrderTotal(o);
+    const statusTitle = isUnpaid ? 'レジでお支払い待ち' : (isD ? 'お渡し準備完了' : (isP ? '調理中' : '受付完了'));
+
+    return `<div class="trk-wrap">
+      <div class="trk-head"><div class="trk-ti" style="${isUnpaid ? 'color:#C97400;' : ''}">${statusTitle}</div><div class="trk-id">${o.id}</div></div>
+      ${isUnpaid ? `<div class="unpaid-box">レジにて番号【${o.id}】をお伝えの上、<br>合計 <b>¥${totalAmt}</b> をお支払いください。<br><span style="font-size:11px;font-weight:600;">※お支払い確認後に調理を開始いたします</span></div>` : ''}
+      <div class="trk"><div class="trk-fill" style="width:${w}"></div>
+      <div class="trk-step ${isUnpaid ? 'warn' : 'act'}"><div class="trk-dot"><svg><use href="#i-check"/></svg></div>${isUnpaid ? '会計待ち' : '受付済'}</div>
+      <div class="trk-step ${isP ? 'act' : ''}"><div class="trk-dot"><svg><use href="#i-check"/></svg></div>調理中</div>
+      <div class="trk-step ${isD ? 'act' : ''}"><div class="trk-dot"><svg><use href="#i-check"/></svg></div>受取可</div></div>
+      <div class="trk-items">${o.it.map(c=>`${c.nm} ${c.sp?'('+c.sp+')':''} <span style="color:#888;font-size:12px;font-weight:400">×${c.q}</span>`).join('<br>')}
+      <div style="margin-top:8px;font-size:13px;color:var(--ink-sub);">合計: ¥${totalAmt} (${o.md})</div>
+      </div>
+      ${isD ? `<button class="rm-order-btn tap" onclick="hideOrder('${o.id}')">注文履歴から消す</button>` : ''}
+    </div>`;
+  }).join('');
+}
+
+$$('.tab').forEach(t=>t.addEventListener('click', ()=>{
+  $$('.tab').forEach(x=>x.classList.toggle('on', x===t));
+  $$('.pane').forEach(p=>p.classList.toggle('on', p.id===`p-${t.dataset.tab}`));
+  window.scrollTo(0,0);
+}));
+
+let tC = 0, tT;
+$('#logoTap').addEventListener('click', (e)=>{
+  e.preventDefault(); tC++; clearTimeout(tT); tT = setTimeout(()=>tC=0, 800);
+  if(tC>=3) { tC=0; $('#staffPass').value = ''; showSh('#sh-login'); }
+});
+
+window.doLogin = () => {
+  const v = $('#staffPass').value.trim();
+  if(v.length === 4 && Number(v) * 7 + 13 === 15553) { 
+    cloSh(); $('#app').style.display='none'; document.body.style.backgroundColor='#000'; $('#kds').classList.add('on'); rK(); 
+  } else toast("パスワードが違います");
+};
+
+window.exitKds = ()=>{ $('#kds').classList.remove('on'); document.body.style.backgroundColor='#FFFFFF'; document.documentElement.style.backgroundColor='#FFFFFF'; $('#app').style.display='block'; rMenu(); };
+
+window.setWait = (d)=>{
+  const nW = Math.max(0, ST.wait + d);
+  if (IS_SYNC_READY) dbRef.child('wait').set(nW);
+  else { ST.wait = nW; $('#kWait').textContent=ST.wait; $('#hdWait').textContent=ST.wait; toast(`${ST.wait}min`); }
+};
+
+window.cStk = (id,d)=>{
+  const nS = Math.max(0,(ST.stk[id]||0)+d);
+  if (IS_SYNC_READY) dbRef.child('stk/' + id).set(nS);
+  else { ST.stk[id]=nS; rK(); }
+};
+
+window.adv = (i, reverse = false) => {
+  const o = ST.ord[i];
+  if (!o) return;
+  const isUnpaid = o.md === '店頭決済(未会計)' && o.st === 'new';
+
+  if (reverse) {
+    if (o.st === 'done') {
+      updateOrderField(o, 'st', 'prep');
+    } else if (o.st === 'prep') {
+      updateOrderField(o, 'st', 'new');
+    } else if (o.st === 'new' && o.md === '店頭決済(会計済)') {
+      updateOrderField(o, 'md', '店頭決済(未会計)');
+    }
+  } else {
+    if (isUnpaid) {
+      updateOrderField(o, 'md', '店頭決済(会計済)');
+    } else if (o.st === 'new') {
+      updateOrderField(o, 'st', 'prep');
+    } else if (o.st === 'prep') {
+      updateOrderField(o, 'st', 'done');
+    } else if (o.st === 'done') {
+      updateOrderField(o, 'st', 'archived');
+    }
+  }
+};
+
+function updateOrderField(o, field, val) {
+  if (IS_SYNC_READY) {
+    dbRef.child('ord/' + o.id + '/' + field).set(val);
+  } else {
+    o[field] = val;
+    rK();
+    rOrd();
+  }
+}
+
+window.cancelUnpaid = (i) => {
+  const o = ST.ord[i];
+  if (!o) return;
+
+  const totalsById = {};
+  (o.it || []).forEach(c => {
+    totalsById[c.id] = (totalsById[c.id] || 0) + c.q;
+  });
+
+  if (IS_SYNC_READY) {
+    Object.keys(totalsById).forEach(id => {
+      const qtyToRestore = totalsById[id];
+      dbRef.child('stk/' + id).transaction(currentStock => {
+        const cur = currentStock ?? (ST.stk[id] || 0);
+        return cur + qtyToRestore;
+      });
+    });
+    dbRef.child('ord/' + o.id + '/st').set('archived');
+  } else {
+    Object.keys(totalsById).forEach(id => {
+      ST.stk[id] = (ST.stk[id] || 0) + totalsById[id];
+    });
+    o.st = 'archived';
+    rMenu(); rOrd(); rK();
+  }
+  toast(`${o.id} を取り消し、在庫を戻しました`);
+};
+
+function rK() {
+  $('#kWait').textContent = ST.wait;
+  $('#kStock').innerHTML = MENU.map(m => `<div class="k-card"><div><b>${m.name}</b></div><div style="display:flex;gap:12px;align-items:center"><button class="k-btn gh tap" onclick="cStk('${m.id}',-1)">-</button><span style="font-size:16px;font-weight:700;width:24px;text-align:center">${ST.stk[m.id]||0}</span><button class="k-btn gh tap" onclick="cStk('${m.id}',1)">+</button></div></div>`).join('');
+  
+  const ao = ST.ord.map((o,i)=>({...o,i})).filter(o => o.st !== 'archived').sort((a,b) => b.ts - a.ts);
+  
+  $('#kOrders').innerHTML = ao.length ? ao.map(o => {
+    const isUnpaid = o.md === '店頭決済(未会計)' && o.st === 'new';
+    const isDone = o.st === 'done';
+    const isNew = o.st === 'new';
+    const totalAmt = getOrderTotal(o);
+
+    let btnText = '調理開始';
+    if (isUnpaid) btnText = `会計確認 (¥${totalAmt})`;
+    else if (o.st === 'prep') btnText = '完了';
+    else if (isDone) btnText = 'お渡し済 (消す)';
+
+    let payBadge = '';
+    if (o.md === '事前決済') {
+      payBadge = `<span style="color:var(--leaf);font-weight:700;">事前決済(決済済 ¥${totalAmt})</span>`;
+    } else if (isUnpaid) {
+      payBadge = `<span style="color:var(--warn);font-weight:700;">店頭決済(未会計 ¥${totalAmt})</span>`;
+    } else {
+      payBadge = `<span style="color:var(--leaf);font-weight:700;">店頭決済(会計済 ¥${totalAmt})</span>`;
+    }
+
+    const canReverse = !isUnpaid && !(isNew && o.md === '事前決済');
+    
+    return `<div class="k-card" style="align-items:flex-start; ${isDone ? 'opacity:0.6;' : ''} ${isUnpaid ? 'border:1px solid var(--warn);' : ''}">
+      <div style="flex:1">
+        <div style="font-size:12px;color:#888">${o.id} / ${payBadge} / ${o.tm}</div>
+        <div style="margin-top:8px;font-weight:700;line-height:1.6">${o.it.map(c=>`${c.nm} ${c.sp?'('+c.sp+')':''} x${c.q}`).join('<br>')}</div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <button class="k-btn ${isUnpaid ? 'warn' : ''} tap" onclick="adv(${o.i})" ${isDone ? 'style="background:#333;color:#fff;"' : ''}>${btnText}</button>
+        ${isUnpaid ? `<button class="k-btn gh tap" onclick="cancelUnpaid(${o.i})" style="font-size:11px; padding:4px 8px; color:#FF3B30; border-color:#552222;">取消(在庫戻す)</button>` : ''}
+        ${canReverse ? `<button class="k-btn gh tap" onclick="adv(${o.i}, true)" style="font-size:11px; padding:4px 8px;">戻す</button>` : ''}
+      </div>
+    </div>`;
+  }).join('') : '<div style="color:#888;text-align:center;padding:20px">No Orders</div>';
+}
+
+window.addEventListener('load', async ()=>{ 
+  if(!IS_SYNC_READY) { rMenu(); rOrd(); }
+  setTimeout(()=>$('#splash').classList.add('hidden'), 1500); 
+  await initSquare();
+});
+</script>
+</body>
+</html>
