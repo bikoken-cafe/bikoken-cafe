@@ -409,18 +409,22 @@ let isOrdering = false;
 
 let myOrders = [];
 let hiddenOrders = [];
+let myOrderCache = {};
 try {
   myOrders = JSON.parse(localStorage.getItem('biko_my_orders') || '[]');
   hiddenOrders = JSON.parse(localStorage.getItem('biko_hidden_orders') || '[]');
+  myOrderCache = JSON.parse(localStorage.getItem('biko_my_order_cache') || '{}');
 } catch (e) {
   myOrders = [];
   hiddenOrders = [];
+  myOrderCache = {};
 }
 
 function saveLocalOrders() {
   try {
     localStorage.setItem('biko_my_orders', JSON.stringify(myOrders));
     localStorage.setItem('biko_hidden_orders', JSON.stringify(hiddenOrders));
+    localStorage.setItem('biko_my_order_cache', JSON.stringify(myOrderCache));
   } catch (e) {}
 }
 
@@ -443,6 +447,27 @@ function toast(m) {
   setTimeout(()=>$('#toast').classList.remove('on'), 3500);
 }
 
+function getTimeStr() {
+  const now = new Date();
+  return String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+}
+
+function mergeWithLocalCache(serverOrdList) {
+  const list = [...serverOrdList];
+  list.forEach(o => {
+    if (o && o.id && myOrders.includes(o.id)) {
+      myOrderCache[o.id] = o;
+    }
+  });
+  myOrders.forEach(oid => {
+    if (!list.some(x => x.id === oid) && myOrderCache[oid]) {
+      list.push(myOrderCache[oid]);
+    }
+  });
+  saveLocalOrders();
+  return list.sort((a, b) => (a.ts || 0) - (b.ts || 0));
+}
+
 if (IS_SYNC_READY) {
   dbRef.on('value', (snapshot) => {
     const data = snapshot.val();
@@ -456,11 +481,8 @@ if (IS_SYNC_READY) {
         }
       });
       ST.isAccepting = data.isAcceptingOrders ?? true;
-      if (data.ord) {
-        ST.ord = Object.values(data.ord).sort((a,b) => a.ts - b.ts);
-      } else {
-        ST.ord = [];
-      }
+      const rawOrds = data.ord ? Object.values(data.ord) : [];
+      ST.ord = mergeWithLocalCache(rawOrds);
       rMenu(); rOrd(); rK(); updateAcceptingUI();
       
       $('#syncPill').style.color = "var(--leaf)";
@@ -764,11 +786,24 @@ async function processPaymentToken(token) {
   }
 
   if (response.ok && data.success) {
-    const pid = data.paymentId || (data.payment && data.payment.id) || 'paid';
     if (data.orderId) {
-      finishOrderUI(data.orderId, '事前決済');
+      const oData = data.order || {
+        id: data.orderId,
+        md: '事前決済',
+        tm: getTimeStr(),
+        it: [...CA],
+        st: 'new',
+        ts: Date.now()
+      };
+      if (!myOrders.includes(data.orderId)) myOrders.push(data.orderId);
+      myOrderCache[data.orderId] = oData;
+      saveLocalOrders();
+      if (IS_SYNC_READY) {
+        dbRef.child('ord/' + data.orderId).set(oData);
+      }
+      finishOrderUI(data.orderId, '事前決済', oData);
     } else {
-      executeOrder('事前決済', pid);
+      executeOrder('事前決済');
     }
   } else {
     toast(formatErr(data.error) || "決済が承認されませんでした");
@@ -782,12 +817,21 @@ window.doOrder = (md) => {
   executeOrder(md);
 };
 
-function finishOrderUI(oid, md = '事前決済') {
-  myOrders.push(oid);
+function finishOrderUI(oid, md = '事前決済', oData = null) {
+  if (!myOrders.includes(oid)) {
+    myOrders.push(oid);
+  }
+  if (oData) {
+    myOrderCache[oid] = oData;
+    if (!ST.ord.some(x => x.id === oid)) {
+      ST.ord.push(oData);
+    }
+  }
   saveLocalOrders();
   CA = []; uC(); cloSh();
+  rMenu(); rOrd(); rK();
   
-  if (md === '店頭決済') {
+  if (md.startsWith('店頭決済')) {
     $('#sTitle').textContent = 'Proceed to Cashier';
     $('#sMsg').innerHTML = '仮受付いたしました。<br><b>レジにて番号をお伝えいただき、お支払い後に調理を開始いたします。</b>';
   } else {
@@ -800,23 +844,51 @@ function finishOrderUI(oid, md = '事前決済') {
     $('#success').classList.remove('on');
     $$('.tab').forEach(x=>x.classList.toggle('on', x.dataset.tab==='orders'));
     $$('.pane').forEach(p=>p.classList.toggle('on', p.id==='p-orders'));
+    rOrd();
     window.scrollTo(0,0);
   }, 3200);
 }
 
-function executeOrder(md, paymentId = null) {
+function executeOrder(md) {
   if (!CA.length) return;
   const oid = 'BIKO-' + Math.floor(1000+Math.random()*9000);
-  const initSt = md === '店頭決済' ? 'unpaid' : 'new';
-  const oData = { id: oid, md: md, tm: new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}), it: [...CA], st: initSt, ts: Date.now() };
-  if (paymentId) oData.paymentId = paymentId;
+  // Firebaseのルール(6項目のみ・stはnew/prep/done/archivedのみ)に100%準拠
+  const initMd = md === '店頭決済' ? '店頭決済(未会計)' : '事前決済';
+  const cleanItems = CA.map(c => ({
+    id: c.id,
+    payId: c.payId || c.id,
+    nm: c.nm,
+    pr: Number(c.pr),
+    q: Number(c.q),
+    sp: c.sp || ''
+  }));
+  const oData = {
+    id: oid,
+    md: initMd,
+    tm: getTimeStr(),
+    it: cleanItems,
+    st: 'new',
+    ts: Date.now()
+  };
+
+  // 1. まずスマホ内の注文リストとキャッシュに即座に保存（これでOrders画面から絶対に消えない）
+  if (!myOrders.includes(oid)) {
+    myOrders.push(oid);
+  }
+  myOrderCache[oid] = oData;
+  if (!ST.ord.some(x => x.id === oid)) {
+    ST.ord.push(oData);
+  }
+  saveLocalOrders();
 
   const totalsById = {};
-  CA.forEach(c => {
+  cleanItems.forEach(c => {
     totalsById[c.id] = (totalsById[c.id] || 0) + c.q;
   });
 
+  // 2. Firebaseへ注文と在庫減算を保存
   if (IS_SYNC_READY) {
+    dbRef.child('ord/' + oid).set(oData);
     Object.keys(totalsById).forEach(id => {
       const qtyToDeduct = totalsById[id];
       dbRef.child('stk/' + id).transaction(currentStock => {
@@ -824,16 +896,13 @@ function executeOrder(md, paymentId = null) {
         return Math.max(0, cur - qtyToDeduct);
       });
     });
-    dbRef.child('ord/' + oid).set(oData);
   } else {
     Object.keys(totalsById).forEach(id => {
       ST.stk[id] = Math.max(0, (ST.stk[id] || 0) - totalsById[id]);
     });
-    ST.ord.push(oData);
-    rMenu(); rOrd(); rK();
   }
 
-  finishOrderUI(oid, md);
+  finishOrderUI(oid, initMd, oData);
 }
 
 window.hideOrder = (oid) => {
@@ -856,7 +925,7 @@ function rOrd() {
 
   if(!myCurrentOrders.length) { ar.innerHTML = '<div style="text-align:center;padding:40px 0;color:#888">注文はありません</div>'; return; }
   ar.innerHTML = [...myCurrentOrders].reverse().map(o => {
-    const isUnpaid = o.st === 'unpaid';
+    const isUnpaid = o.md === '店頭決済(未会計)' && o.st === 'new';
     const isP = o.st === 'prep' || o.st === 'done', isD = o.st === 'done';
     const w = isD ? '100%' : (isP ? '50%' : '0%');
     const totalAmt = getOrderTotal(o);
@@ -913,34 +982,53 @@ window.cStk = (id,d)=>{
 window.adv = (i, reverse = false) => {
   const o = ST.ord[i];
   if (!o) return;
-  let nSt = o.st;
-  
+  const isUnpaid = o.md === '店頭決済(未会計)' && o.st === 'new';
+
   if (reverse) {
-    if (o.st === 'done') nSt = 'prep';
-    else if (o.st === 'prep') nSt = 'new';
-    else if (o.st === 'new' && o.md === '店頭決済') nSt = 'unpaid';
-    else if (o.st === 'archived') nSt = 'done';
+    if (o.st === 'done') {
+      updateOrderField(o, 'st', 'prep');
+    } else if (o.st === 'prep') {
+      updateOrderField(o, 'st', 'new');
+    } else if (o.st === 'new' && o.md === '店頭決済(会計済)') {
+      updateOrderField(o, 'md', '店頭決済(未会計)');
+    }
   } else {
-    if (o.st === 'unpaid') nSt = 'new';
-    else if (o.st === 'new') nSt = 'prep';
-    else if (o.st === 'prep') nSt = 'done';
-    else if (o.st === 'done') nSt = 'archived';
-  }
-
-  if (nSt === o.st) return;
-
-  if (IS_SYNC_READY) {
-    dbRef.child('ord/' + o.id + '/st').set(nSt);
-  } else {
-    o.st = nSt;
-    rK();
-    rOrd();
+    if (isUnpaid) {
+      updateOrderField(o, 'md', '店頭決済(会計済)');
+    } else if (o.st === 'new') {
+      updateOrderField(o, 'st', 'prep');
+    } else if (o.st === 'prep') {
+      updateOrderField(o, 'st', 'done');
+    } else if (o.st === 'done') {
+      updateOrderField(o, 'st', 'archived');
+    }
   }
 };
 
+function updateOrderField(o, field, val) {
+  o[field] = val;
+  if (myOrderCache[o.id]) {
+    myOrderCache[o.id][field] = val;
+    saveLocalOrders();
+  }
+  if (IS_SYNC_READY) {
+    const cleanOrder = {
+      id: o.id,
+      md: o.md,
+      tm: o.tm,
+      it: o.it,
+      st: o.st,
+      ts: o.ts
+    };
+    dbRef.child('ord/' + o.id).set(cleanOrder);
+  }
+  rK();
+  rOrd();
+}
+
 window.cancelUnpaid = (i) => {
   const o = ST.ord[i];
-  if (!o || o.st !== 'unpaid') return;
+  if (!o) return;
 
   const totalsById = {};
   (o.it || []).forEach(c => {
@@ -955,7 +1043,7 @@ window.cancelUnpaid = (i) => {
         return cur + qtyToRestore;
       });
     });
-    dbRef.child('ord/' + o.id + '/st').set('archived');
+    updateOrderField(o, 'st', 'archived');
   } else {
     Object.keys(totalsById).forEach(id => {
       ST.stk[id] = (ST.stk[id] || 0) + totalsById[id];
@@ -973,26 +1061,26 @@ function rK() {
   const ao = ST.ord.map((o,i)=>({...o,i})).filter(o => o.st !== 'archived').sort((a,b) => b.ts - a.ts);
   
   $('#kOrders').innerHTML = ao.length ? ao.map(o => {
-    const isUnpaid = o.st === 'unpaid';
+    const isUnpaid = o.md === '店頭決済(未会計)' && o.st === 'new';
     const isDone = o.st === 'done';
     const isNew = o.st === 'new';
     const totalAmt = getOrderTotal(o);
 
     let btnText = '調理開始';
-    if (isUnpaid) btnText = `会計確認 (¥${totalAmt})`;
+    if (isUnpaid) btnText = ` 会計確認 (¥${totalAmt})`;
     else if (o.st === 'prep') btnText = '完了';
     else if (isDone) btnText = 'お渡し済 (消す)';
 
     let payBadge = '';
-    if (o.paymentId || o.md === '事前決済') {
+    if (o.md === '事前決済') {
       payBadge = `<span style="color:var(--leaf);font-weight:700;">事前決済(決済済 ¥${totalAmt})</span>`;
     } else if (isUnpaid) {
-      payBadge = `<span style="color:var(--warn);font-weight:700;">店頭決済(未会計 ¥${totalAmt})</span>`;
+      payBadge = `<span style="color:var(--warn);font-weight:700;"> 店頭決済(未会計 ¥${totalAmt})</span>`;
     } else {
       payBadge = `<span style="color:var(--leaf);font-weight:700;">店頭決済(会計済 ¥${totalAmt})</span>`;
     }
 
-    const canReverse = !isUnpaid && !(isNew && o.md !== '店頭決済');
+    const canReverse = !isUnpaid && !(isNew && o.md === '事前決済');
     
     return `<div class="k-card" style="align-items:flex-start; ${isDone ? 'opacity:0.6;' : ''} ${isUnpaid ? 'border:1px solid var(--warn);' : ''}">
       <div style="flex:1">
