@@ -10,7 +10,8 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;600;700&family=Noto+Sans+JP:wght@400;600;700&family=Shippori+Mincho:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;600;700&family=Noto+Sans+JP:wght@400;600;700&family=Shippori+Mincho:wght@600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;600;700&family=Noto+Sans+JP:wght@400;600;700&family=Shippori+Mincho:wght@600;700&display=swap" rel="stylesheet"></noscript>
 
 <style>
 :root {
@@ -56,11 +57,16 @@ a { color: inherit; text-decoration: none; }
 .ic { width: 24px; height: 24px; display: inline-block; vertical-align: middle; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;}
 
 /* =========================================================
-   Luxury Splash Screen
+   Luxury Splash Screen (iOS Safari Complete Fix)
    ========================================================= */
 #splash {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
   z-index: 9999;
   background-color: #FFFFFF;
   display: flex;
@@ -69,9 +75,7 @@ a { color: inherit; text-decoration: none; }
   justify-content: center;
   pointer-events: auto;
   touch-action: none;
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
-  transition: background-color 0.7s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
+  transition: background-color 0.65s ease, opacity 0.3s ease;
 }
 #splash.docking {
   background-color: rgba(255, 255, 255, 0);
@@ -81,56 +85,70 @@ a { color: inherit; text-decoration: none; }
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  display: none;
+  display: none !important;
 }
 
 .splash-mover {
+  display: inline-block;
   transform-origin: center center;
-  transform: translate3d(0px, 0px, 0px) scale(1.6);
-  will-change: transform;
+  transform: translate(0px, 0px) scale(1.55);
 }
 .splash-mover.docking {
-  transition: transform 0.78s cubic-bezier(0.76, 0, 0.24, 1);
+  transition: transform 0.75s cubic-bezier(0.76, 0, 0.24, 1);
 }
 
 .logo-wrap-splash {
   display: inline-flex;
   align-items: baseline;
-  user-select: none;
-  -webkit-user-select: none;
-  opacity: 1;
   white-space: nowrap;
+  color: #1C1C1E;
 }
-.logo-wrap-splash .logo-rest {
-  overflow: visible !important;
-  max-width: none !important;
-  opacity: 1 !important;
+.logo-wrap-splash .logo-b {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  font-size: 26px;
+  color: #1C1C1E;
+}
+.logo-wrap-splash .logo-iko {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  font-size: 26px;
+  color: #1C1C1E;
+}
+.logo-wrap-splash .logo-ken {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 400;
+  font-size: 22px;
+  letter-spacing: 0.08em;
+  color: #5A8B9C;
+  margin-left: 2px;
+}
+.logo-wrap-splash .logo-dot {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  font-size: 26px;
+  color: #34C759;
+  margin-left: 1px;
 }
 
 .splash-line {
-  width: 48px;
-  height: 1px;
-  background: var(--brand);
+  width: 52px;
+  height: 1.5px;
+  background-color: #5A8B9C;
   margin-top: 22px;
-  opacity: 0.55;
-  transform-origin: center center;
-  animation: splashLineGrow 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  opacity: 0.65;
   transition: opacity 0.2s ease;
 }
 .splash-sub {
-  font-size: 9px;
-  color: var(--ink-sub);
-  letter-spacing: 0.32em;
+  font-family: -apple-system, BlinkMacSystemFont, Georgia, sans-serif;
+  font-size: 10px;
+  color: #8E8E93;
+  letter-spacing: 0.3em;
   text-transform: uppercase;
   margin-top: 12px;
   font-weight: 600;
-  opacity: 0.9;
+  opacity: 1;
   transition: opacity 0.2s ease;
-}
-
-@keyframes splashLineGrow {
-  0% { transform: scaleX(0.15); }
-  100% { transform: scaleX(1); }
 }
 
 #splash.docking .splash-line,
@@ -140,7 +158,7 @@ a { color: inherit; text-decoration: none; }
 
 #logoTap .logo-wrap {
   opacity: 0;
-  transition: opacity 0.08s ease;
+  transition: opacity 0.1s ease;
 }
 #logoTap .logo-wrap.ready {
   opacity: 1;
@@ -337,9 +355,7 @@ a { color: inherit; text-decoration: none; }
 <div id="splash">
   <div class="splash-mover" id="splashMover">
     <div class="logo-wrap-splash" id="splashLogo">
-      <span class="logo-b">B</span>
-      <span class="logo-rest"><span class="logo-iko">IKO</span><span class="logo-ken">KEN</span></span>
-      <span class="logo-dot">.</span>
+      <span class="logo-b">B</span><span class="logo-iko">IKO</span><span class="logo-ken">KEN</span><span class="logo-dot">.</span>
     </div>
   </div>
   <div class="splash-line"></div>
@@ -373,8 +389,8 @@ a { color: inherit; text-decoration: none; }
       return;
     }
 
-    var initScale = window.innerWidth >= 600 ? 1.85 : 1.6;
-    mv.style.transform = 'translate3d(0px, 0px, 0px) scale(' + initScale + ')';
+    var initScale = window.innerWidth >= 600 ? 1.8 : 1.55;
+    mv.style.transform = 'translate(0px, 0px) scale(' + initScale + ')';
 
     var done = false;
     function finishSplash() {
@@ -385,7 +401,7 @@ a { color: inherit; text-decoration: none; }
       sp.classList.add('hidden');
     }
 
-    var safeTimer = setTimeout(finishSplash, 2600);
+    var safeTimer = setTimeout(finishSplash, 2400);
 
     setTimeout(function() {
       try {
@@ -408,19 +424,19 @@ a { color: inherit; text-decoration: none; }
 
           sp.classList.add('docking');
           mv.classList.add('docking');
-          mv.style.transform = 'translate3d(' + dx + 'px, ' + dy + 'px, 0px) scale(' + finalScale + ')';
+          mv.style.transform = 'translate(' + dx + 'px, ' + dy + 'px) scale(' + finalScale + ')';
 
           setTimeout(function() {
             clearTimeout(safeTimer);
             finishSplash();
-          }, 780);
+          }, 760);
         } else {
           finishSplash();
         }
       } catch (e) {
         finishSplash();
       }
-    }, 950);
+    }, 900);
   })();
   </script>
 
