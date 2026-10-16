@@ -12,10 +12,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;600;700&family=Noto+Sans+JP:wght@400;600;700&family=Shippori+Mincho:wght@600;700&display=swap" rel="stylesheet">
 
-<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
-<script src="https://web.squarecdn.com/v1/square.js"></script>
-
 <style>
 :root {
   --ink: #1C1C1E; --ink-sub: #8E8E93; --bg: #FFFFFF; --bg-card: #F2F2F7;
@@ -52,15 +48,12 @@ a { color: inherit; text-decoration: none; }
 .ic { width: 24px; height: 24px; display: inline-block; vertical-align: middle; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;}
 
 /* =========================================================
-   Luxury Splash Screen (スマホ・タブレット・PC 完全対応)
+   Luxury Splash Screen (CSS即座起動 ＋ 左上吸い込み2層構造)
    ========================================================= */
 #splash {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100vh;
-  height: 100dvh;
+  inset: -60px 0 0 0;
+  padding-top: 60px;
   z-index: 9999;
   background-color: #FFFFFF;
   display: flex;
@@ -70,7 +63,7 @@ a { color: inherit; text-decoration: none; }
   pointer-events: auto;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
-  transition: background-color 0.75s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease;
+  transition: background-color 0.75s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease;
 }
 #splash.docking {
   background-color: rgba(255, 255, 255, 0);
@@ -82,43 +75,44 @@ a { color: inherit; text-decoration: none; }
   pointer-events: none;
   display: none;
 }
+
+/* 外側レイヤー：左上ヘッダーへの移動・縮小を担当 */
+.splash-mover {
+  --splash-scale: 1.55;
+  transform-origin: center center;
+  transform: translate3d(0px, 0px, 0px) scale(var(--splash-scale));
+  will-change: transform;
+}
+@media (min-width: 600px) {
+  .splash-mover {
+    --splash-scale: 1.85;
+  }
+}
+.splash-mover.docking {
+  transition: transform 0.82s cubic-bezier(0.76, 0, 0.24, 1);
+}
+
+/* 内側レイヤー：JSを待たずに0秒目からCSSだけで即座に浮かび上がる */
 .logo-wrap-splash {
   display: flex;
   align-items: baseline;
   user-select: none;
   -webkit-user-select: none;
-  transform-origin: center center;
-  --init-scale: 1.55;
-  opacity: 0;
-  transform: translate3d(0px, 10px, 0px) scale(var(--init-scale));
-  transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1), transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: transform, opacity;
-}
-@media (min-width: 600px) {
-  .logo-wrap-splash {
-    --init-scale: 1.85;
-  }
-}
-#splash.show .logo-wrap-splash {
-  opacity: 1;
-  transform: translate3d(0px, 0px, 0px) scale(var(--init-scale));
-}
-.logo-wrap-splash.docking {
-  transition: transform 0.82s cubic-bezier(0.76, 0, 0.24, 1), opacity 0.2s ease;
+  animation: splashLogoIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .logo-wrap-splash .logo-rest {
   overflow: visible !important;
   max-width: none !important;
   opacity: 1 !important;
 }
+
 .splash-line {
   width: 44px;
   height: 1px;
   background: var(--brand);
-  margin-top: 20px;
-  opacity: 0;
-  transform: scaleX(0.1);
-  transition: opacity 0.6s ease 0.12s, transform 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.12s;
+  margin-top: 22px;
+  animation: splashLineIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+  transition: opacity 0.25s ease, transform 0.25s ease;
 }
 .splash-sub {
   font-size: 9px;
@@ -127,39 +121,66 @@ a { color: inherit; text-decoration: none; }
   text-transform: uppercase;
   margin-top: 12px;
   font-weight: 600;
-  opacity: 0;
-  transform: translate3d(0px, 6px, 0px);
-  transition: opacity 0.6s ease 0.2s, transform 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.2s;
-}
-#splash.show .splash-line {
-  opacity: 0.5;
-  transform: scaleX(1);
-}
-#splash.show .splash-sub {
-  opacity: 1;
-  transform: translate3d(0px, 0px, 0px);
-}
-#splash.docking .splash-line {
-  transition: opacity 0.25s ease, transform 0.3s ease;
-  opacity: 0;
-  transform: scaleX(0);
-}
-#splash.docking .splash-sub {
+  animation: splashSubIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both;
   transition: opacity 0.25s ease, transform 0.25s ease;
-  opacity: 0;
-  transform: translate3d(0px, -4px, 0px);
 }
+
+@keyframes splashLogoIn {
+  0% { opacity: 0; transform: translate3d(0, 10px, 0); }
+  100% { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@keyframes splashLineIn {
+  0% { opacity: 0; transform: scaleX(0.1); }
+  100% { opacity: 0.5; transform: scaleX(1); }
+}
+@keyframes splashSubIn {
+  0% { opacity: 0; transform: translate3d(0, 6px, 0); }
+  100% { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+#splash.docking .splash-line,
+#splash.docking .splash-sub {
+  opacity: 0 !important;
+  animation: none;
+}
+
 #logoTap .logo-wrap {
   opacity: 0;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.12s ease;
 }
 #logoTap .logo-wrap.ready {
   opacity: 1;
 }
 
-.header { position: fixed; top: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: var(--max-w); z-index: 50; padding-top: var(--safe-top); background: rgba(255,255,255,0.92); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-bottom: 0.5px solid transparent; transition: border-color 0.3s; }
+/* =========================================================
+   Header (ステータスバー裏のはみ出しを完全に防ぐ上部延長構造)
+   ========================================================= */
+.header {
+  position: fixed;
+  top: -120px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: var(--max-w);
+  z-index: 50;
+  padding-top: calc(120px + var(--safe-top));
+  background-color: #FFFFFF;
+  border-bottom: 0.5px solid transparent;
+  transition: border-color 0.3s;
+}
+.header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -50vw;
+  right: -50vw;
+  bottom: 0;
+  background-color: #FFFFFF;
+  z-index: -1;
+  pointer-events: none;
+}
 .header.scrolled { border-bottom-color: var(--line); }
-.header-in { display: flex; align-items: center; justify-content: space-between; height: 52px; padding: 0 20px; }
+.header-in { display: flex; align-items: center; justify-content: space-between; height: 52px; padding: 0 20px; background-color: #FFFFFF; }
 .header-logo { cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; padding: 4px 0; touch-action: manipulation; }
 .logo-wrap { display: flex; align-items: baseline; }
 .logo-b { font-family: var(--font-serif-en); font-weight: 700; font-size: 24px; color: var(--ink); transition: color 0.5s var(--ease); }
@@ -189,7 +210,7 @@ a { color: inherit; text-decoration: none; }
 .stock-warn { font-weight: 700; font-size: 13px; color: var(--alert); margin-top: 6px; }
 .sold-out { position: absolute; inset: 0; background: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 20px; letter-spacing: 0.1em; border-radius: 12px; backdrop-filter: blur(2px); }
 
-.tabbar { position: fixed; bottom: 0; z-index: 40; height: var(--tabbar-h); padding-bottom: var(--safe-bottom); background: rgba(255,255,255,0.85); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-top: 0.5px solid var(--line); display: flex; align-items: center; justify-content: space-around; width: 100%; max-width: var(--max-w); left: 50%; transform: translateX(-50%);}
+.tabbar { position: fixed; bottom: 0; z-index: 40; height: var(--tabbar-h); padding-bottom: var(--safe-bottom); background: rgba(255,255,255,0.92); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-top: 0.5px solid var(--line); display: flex; align-items: center; justify-content: space-around; width: 100%; max-width: var(--max-w); left: 50%; transform: translateX(-50%);}
 .tab { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; color: #A0A0A0; width: 80px; }
 .tab.on { color: var(--ink); }
 
@@ -310,10 +331,12 @@ a { color: inherit; text-decoration: none; }
 </svg>
 
 <div id="splash">
-  <div class="logo-wrap-splash" id="splashLogo">
-    <span class="logo-b">B</span>
-    <span class="logo-rest"><span class="logo-iko">IKO</span><span class="logo-ken">KEN</span></span>
-    <span class="logo-dot">.</span>
+  <div class="splash-mover" id="splashMover">
+    <div class="logo-wrap-splash" id="splashLogo">
+      <span class="logo-b">B</span>
+      <span class="logo-rest"><span class="logo-iko">IKO</span><span class="logo-ken">KEN</span></span>
+      <span class="logo-dot">.</span>
+    </div>
   </div>
   <div class="splash-line"></div>
   <div class="splash-sub">Gastronomy &amp; Coffee</div>
@@ -332,6 +355,59 @@ a { color: inherit; text-decoration: none; }
       <div class="status-pill" id="syncPill" style="color:var(--ink-sub); border-color:var(--line); background:var(--bg-card);">約 <span id="hdWait" style="margin:0 2px;">8</span> 分待ち</div>
     </div>
   </div>
+
+  <script>
+  (function(){
+    var sp = document.getElementById('splash');
+    var mv = document.getElementById('splashMover');
+    var hd = document.querySelector('#logoTap .logo-wrap');
+    var headerBar = document.querySelector('.header');
+    if (!sp || !mv || !hd) return;
+
+    var done = false;
+    function finishSplash() {
+      if (done) return;
+      done = true;
+      hd.classList.add('ready');
+      sp.classList.add('hidden');
+    }
+
+    var safeTimer = setTimeout(finishSplash, 2800);
+
+    setTimeout(function() {
+      try {
+        window.scrollTo(0, 0);
+        if (headerBar) headerBar.classList.remove('scrolled');
+
+        var sRect = mv.getBoundingClientRect();
+        var tRect = hd.getBoundingClientRect();
+
+        if (tRect.width > 0 && sRect.width > 0) {
+          var sCx = sRect.left + sRect.width / 2;
+          var sCy = sRect.top + sRect.height / 2;
+          var tCx = tRect.left + tRect.width / 2;
+          var tCy = tRect.top + tRect.height / 2;
+
+          var dx = tCx - sCx;
+          var dy = tCy - sCy;
+
+          sp.classList.add('docking');
+          mv.classList.add('docking');
+          mv.style.transform = 'translate3d(' + dx + 'px, ' + dy + 'px, 0px) scale(1)';
+
+          setTimeout(function() {
+            clearTimeout(safeTimer);
+            finishSplash();
+          }, 820);
+        } else {
+          finishSplash();
+        }
+      } catch (e) {
+        finishSplash();
+      }
+    }, 1150);
+  })();
+  </script>
 
   <section class="pane on" id="p-menu">
     <div id="stop-banner" style="display:none; margin: 8px 20px 16px; background: rgba(255,59,48,0.1); color: var(--alert); border: 1px solid rgba(255,59,48,0.3); border-radius: 8px; padding: 12px; text-align: center; font-weight: 700; font-size: 13px;">
@@ -463,6 +539,10 @@ a { color: inherit; text-decoration: none; }
 
 <div class="toast" id="toast"></div>
 
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
+<script src="https://web.squarecdn.com/v1/square.js"></script>
+
 <script>
 "use strict";
 
@@ -480,7 +560,7 @@ const firebaseConfig = {
   measurementId: "G-SCXRMJCCZS"
 };
 
-const IS_SYNC_READY = firebaseConfig.apiKey !== "YOUR_API_KEY" && firebaseConfig.apiKey !== "";
+const IS_SYNC_READY = typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "YOUR_API_KEY" && firebaseConfig.apiKey !== "";
 let dbRef = null;
 
 if (IS_SYNC_READY) {
@@ -1086,77 +1166,10 @@ function rK() {
   }).join('') : '<div style="color:#888;text-align:center;padding:20px">No Orders</div>';
 }
 
-let splashStarted = false;
-function runLuxurySplash() {
-  if (splashStarted) return;
-  splashStarted = true;
-
-  const splash = $('#splash');
-  const splashLogo = $('#splashLogo');
-  const headerLogo = $('#logoTap .logo-wrap');
-
-  if (!splash || !splashLogo || !headerLogo) {
-    if (headerLogo) headerLogo.classList.add('ready');
-    if (splash) splash.classList.add('hidden');
-    return;
-  }
-
-  // 安全装置: 万が一通信やブラウザの遅延があっても3.2秒後に確実に画面を表示する
-  const failSafeTimer = setTimeout(() => {
-    headerLogo.classList.add('ready');
-    splash.classList.add('hidden');
-  }, 3200);
-
-  // Step 1: ページを開いた瞬間に中央ロゴ・ライン・サブタイトルを優雅にフェードイン
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      splash.classList.add('show');
-    });
-  });
-
-  // Step 2: 1.25秒後に左上のヘッダーロゴ座標を計測して吸い込む（スマホ・タブレット・PC全対応）
-  setTimeout(() => {
-    window.scrollTo(0, 0);
-    $('.header').classList.remove('scrolled');
-
-    const sRect = splashLogo.getBoundingClientRect();
-    const tRect = headerLogo.getBoundingClientRect();
-
-    const sCx = sRect.left + sRect.width / 2;
-    const sCy = sRect.top + sRect.height / 2;
-    const tCx = tRect.left + tRect.width / 2;
-    const tCy = tRect.top + tRect.height / 2;
-
-    const dx = tCx - sCx;
-    const dy = tCy - sCy;
-
-    splash.classList.add('docking');
-    splashLogo.classList.add('docking');
-    splashLogo.style.transform = `translate3d(${dx}px, ${dy}px, 0px) scale(1)`;
-
-    // Step 3: 左上にピタッと着地した瞬間に本物のヘッダーロゴへ切り替え
-    setTimeout(() => {
-      clearTimeout(failSafeTimer);
-      headerLogo.classList.add('ready');
-      splash.classList.add('hidden');
-    }, 820);
-  }, 1250);
-}
-
-// 写真や外部SDKの完了を待たず、HTMLが開いた瞬間(DOMContentLoaded)にすぐロード画面を開始
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    rMenu(); rOrd();
-    runLuxurySplash();
-  });
-} else {
-  rMenu(); rOrd();
-  runLuxurySplash();
-}
-
-window.addEventListener('load', async () => { 
-  runLuxurySplash();
-  await initSquare();
+rMenu();
+rOrd();
+window.addEventListener('load', () => {
+  initSquare();
 });
 </script>
 </body>
