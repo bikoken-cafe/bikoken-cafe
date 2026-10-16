@@ -21,7 +21,7 @@
   --ink: #1C1C1E; --ink-sub: #8E8E93; --bg: #FFFFFF; --bg-card: #F2F2F7;
   --brand: #5A8B9C; --leaf: #34C759; --alert: #FF3B30; --warn: #FF9500; --line: #E5E5EA;
   --tabbar-h: 70px; --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 20px);
-  --font-serif-en: 'Cormorant Garamond', serif; --font-serif-jp: 'Shippori Mincho', serif; --font-sans: 'Inter', 'Noto Sans JP', sans-serif;
+  --font-serif-en: 'Cormorant Garamond', Georgia, 'Times New Roman', serif; --font-serif-jp: 'Shippori Mincho', serif; --font-sans: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
   --ease: cubic-bezier(0.25, 1, 0.5, 1);
   --max-w: 600px;
 }
@@ -51,60 +51,74 @@ a { color: inherit; text-decoration: none; }
 .tap:active { transform: scale(0.96); opacity: 0.8; }
 .ic { width: 24px; height: 24px; display: inline-block; vertical-align: middle; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;}
 
+/* =========================================================
+   Luxury Splash Screen (スマホ・タブレット・PC 完全対応)
+   ========================================================= */
 #splash {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
   z-index: 9999;
-  background: rgba(255, 255, 255, 1);
+  background-color: #FFFFFF;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.75s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.85s ease;
+  pointer-events: auto;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transition: background-color 0.75s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease;
 }
 #splash.docking {
-  background: rgba(255, 255, 255, 0);
+  background-color: rgba(255, 255, 255, 0);
   pointer-events: none;
 }
 #splash.hidden {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
+  display: none;
 }
 .logo-wrap-splash {
   display: flex;
   align-items: baseline;
   user-select: none;
+  -webkit-user-select: none;
   transform-origin: center center;
-  transform: translate(0px, 0px) scale(1.85);
-  will-change: transform;
+  --init-scale: 1.55;
+  opacity: 0;
+  transform: translate3d(0px, 10px, 0px) scale(var(--init-scale));
+  transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1), transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform, opacity;
+}
+@media (min-width: 600px) {
+  .logo-wrap-splash {
+    --init-scale: 1.85;
+  }
+}
+#splash.show .logo-wrap-splash {
+  opacity: 1;
+  transform: translate3d(0px, 0px, 0px) scale(var(--init-scale));
 }
 .logo-wrap-splash.docking {
-  transition: transform 0.85s cubic-bezier(0.76, 0, 0.24, 1);
+  transition: transform 0.82s cubic-bezier(0.76, 0, 0.24, 1), opacity 0.2s ease;
 }
-.logo-wrap-splash .logo-b,
-.logo-wrap-splash .logo-iko,
-.logo-wrap-splash .logo-ken,
-.logo-wrap-splash .logo-dot {
-  display: inline-block;
-  opacity: 0;
-  filter: blur(6px);
-  transform: translateY(10px);
-  animation: luxReveal 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+.logo-wrap-splash .logo-rest {
+  overflow: visible !important;
+  max-width: none !important;
+  opacity: 1 !important;
 }
-.logo-wrap-splash .logo-iko { animation-delay: 0.06s; }
-.logo-wrap-splash .logo-ken { animation-delay: 0.14s; }
-.logo-wrap-splash .logo-dot { animation-delay: 0.24s; }
-
 .splash-line {
   width: 44px;
   height: 1px;
   background: var(--brand);
-  margin-top: 22px;
-  opacity: 0.45;
-  transform: scaleX(0);
-  animation: luxLine 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.25s forwards;
-  transition: opacity 0.35s ease, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  margin-top: 20px;
+  opacity: 0;
+  transform: scaleX(0.1);
+  transition: opacity 0.6s ease 0.12s, transform 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.12s;
 }
 .splash-sub {
   font-size: 9px;
@@ -114,19 +128,26 @@ a { color: inherit; text-decoration: none; }
   margin-top: 12px;
   font-weight: 600;
   opacity: 0;
-  filter: blur(4px);
-  transform: translateY(6px);
-  animation: luxSubReveal 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.32s forwards;
-  transition: opacity 0.35s ease, transform 0.35s ease, filter 0.35s ease;
+  transform: translate3d(0px, 6px, 0px);
+  transition: opacity 0.6s ease 0.2s, transform 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.2s;
+}
+#splash.show .splash-line {
+  opacity: 0.5;
+  transform: scaleX(1);
+}
+#splash.show .splash-sub {
+  opacity: 1;
+  transform: translate3d(0px, 0px, 0px);
 }
 #splash.docking .splash-line {
+  transition: opacity 0.25s ease, transform 0.3s ease;
   opacity: 0;
   transform: scaleX(0);
 }
 #splash.docking .splash-sub {
-  opacity: 0 !important;
-  filter: blur(3px) !important;
-  transform: translateY(-4px) !important;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  opacity: 0;
+  transform: translate3d(0px, -4px, 0px);
 }
 #logoTap .logo-wrap {
   opacity: 0;
@@ -134,18 +155,6 @@ a { color: inherit; text-decoration: none; }
 }
 #logoTap .logo-wrap.ready {
   opacity: 1;
-}
-@keyframes luxReveal {
-  0% { opacity: 0; filter: blur(6px); transform: translateY(10px); }
-  100% { opacity: 1; filter: blur(0px); transform: translateY(0); }
-}
-@keyframes luxLine {
-  0% { transform: scaleX(0); }
-  100% { transform: scaleX(1); }
-}
-@keyframes luxSubReveal {
-  0% { opacity: 0; filter: blur(4px); transform: translateY(6px); }
-  100% { opacity: 1; filter: blur(0px); transform: translateY(0); }
 }
 
 .header { position: fixed; top: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: var(--max-w); z-index: 50; padding-top: var(--safe-top); background: rgba(255,255,255,0.92); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-bottom: 0.5px solid transparent; transition: border-color 0.3s; }
@@ -1077,7 +1086,11 @@ function rK() {
   }).join('') : '<div style="color:#888;text-align:center;padding:20px">No Orders</div>';
 }
 
+let splashStarted = false;
 function runLuxurySplash() {
+  if (splashStarted) return;
+  splashStarted = true;
+
   const splash = $('#splash');
   const splashLogo = $('#splashLogo');
   const headerLogo = $('#logoTap .logo-wrap');
@@ -1088,7 +1101,20 @@ function runLuxurySplash() {
     return;
   }
 
-  // 1.35秒後に中央から左上のヘッダーロゴ座標へ吸い込まれるアニメーションを開始
+  // 安全装置: 万が一通信やブラウザの遅延があっても3.2秒後に確実に画面を表示する
+  const failSafeTimer = setTimeout(() => {
+    headerLogo.classList.add('ready');
+    splash.classList.add('hidden');
+  }, 3200);
+
+  // Step 1: ページを開いた瞬間に中央ロゴ・ライン・サブタイトルを優雅にフェードイン
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      splash.classList.add('show');
+    });
+  });
+
+  // Step 2: 1.25秒後に左上のヘッダーロゴ座標を計測して吸い込む（スマホ・タブレット・PC全対応）
   setTimeout(() => {
     window.scrollTo(0, 0);
     $('.header').classList.remove('scrolled');
@@ -1106,18 +1132,29 @@ function runLuxurySplash() {
 
     splash.classList.add('docking');
     splashLogo.classList.add('docking');
-    splashLogo.style.transform = `translate(${dx}px, ${dy}px) scale(1)`;
+    splashLogo.style.transform = `translate3d(${dx}px, ${dy}px, 0px) scale(1)`;
 
-    // 左上にピタッと着地した瞬間に本物のヘッダーロゴへシームレスに切り替え
+    // Step 3: 左上にピタッと着地した瞬間に本物のヘッダーロゴへ切り替え
     setTimeout(() => {
+      clearTimeout(failSafeTimer);
       headerLogo.classList.add('ready');
       splash.classList.add('hidden');
-    }, 850);
-  }, 1350);
+    }, 820);
+  }, 1250);
 }
 
-window.addEventListener('load', async ()=>{ 
-  if(!IS_SYNC_READY) { rMenu(); rOrd(); }
+// 写真や外部SDKの完了を待たず、HTMLが開いた瞬間(DOMContentLoaded)にすぐロード画面を開始
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    rMenu(); rOrd();
+    runLuxurySplash();
+  });
+} else {
+  rMenu(); rOrd();
+  runLuxurySplash();
+}
+
+window.addEventListener('load', async () => { 
   runLuxurySplash();
   await initSquare();
 });
