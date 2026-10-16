@@ -118,7 +118,6 @@ a { color: inherit; text-decoration: none; }
 .q-num { font-size: 18px; font-weight: 700; min-width: 20px; text-align: center; }
 
 .cta { width: 100%; padding: 16px; border-radius: 12px; background: var(--ink); color: #fff; font-weight: 700; font-size: 15px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px; }
-.cta.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
 .cta.disabled { opacity: 0.5; pointer-events: none; }
 
 .opt-lbl { font-weight: 600; font-size: 13px; margin-bottom: 12px; display: block; color: var(--ink-sub); }
@@ -149,7 +148,6 @@ a { color: inherit; text-decoration: none; }
 .trk-head { display: flex; justify-content: space-between; margin-bottom: 16px; align-items: center; }
 .trk-ti { font-weight: 700; font-size: 16px; font-family: var(--font-serif-jp); display: flex; align-items: center; gap: 8px; }
 .trk-id { font-size: 13px; font-weight: 600; color: var(--ink-sub); }
-.unpaid-box { background: rgba(255,149,0,0.12); border: 1px solid rgba(255,149,0,0.4); color: #C97400; padding: 12px; border-radius: 10px; font-size: 13px; font-weight: 700; margin-bottom: 16px; text-align: center; }
 
 .trk { position: relative; display: flex; justify-content: space-between; margin: 0 10px; }
 .trk::before { content: ''; position: absolute; top: 12px; left: 0; right: 0; height: 3px; background: var(--line); z-index: 1; border-radius: 2px; }
@@ -160,8 +158,6 @@ a { color: inherit; text-decoration: none; }
 .trk-dot svg { width: 14px; height: 14px; }
 .trk-step.act .trk-dot { background: var(--brand); color: #fff; transform: scale(1.1); box-shadow: 0 0 0 4px rgba(90,139,156,0.2); }
 .trk-step.act { color: var(--ink); font-weight: 700; }
-.trk-step.warn .trk-dot { background: var(--warn); color: #fff; transform: scale(1.1); box-shadow: 0 0 0 4px rgba(255,149,0,0.2); }
-.trk-step.warn { color: #C97400; font-weight: 700; }
 .trk-step.done .trk-dot { background: var(--brand); color: #fff; }
 .trk-step.done { color: var(--ink); }
 .trk-items { margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--line); font-size: 14px; font-weight: 600; line-height: 1.8; }
@@ -195,7 +191,6 @@ a { color: inherit; text-decoration: none; }
 .k-sec { padding: 24px; }
 .k-card { background: #1C1C1E; border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
 .k-btn { background: var(--leaf); color: #000; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 13px; }
-.k-btn.warn { background: var(--warn); color: #000; }
 .k-btn.gh { background: transparent; color: #fff; border: 1px solid #555; }
 .rm-order-btn { display: block; width: 100%; padding: 12px; margin-top: 16px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--ink-sub); font-size: 13px; font-weight: 600; text-align: center; }
 </style>
@@ -318,9 +313,6 @@ a { color: inherit; text-decoration: none; }
       </div>
       <div id="card-container" class="sq-card-wrapper"></div>
       <button class="cta tap" id="card-button">クレジットカードで決済する</button>
-
-      <div class="pay-divider"><span>または</span></div>
-      <button class="cta ghost tap" id="store-pay-button" onclick="doOrder('店頭決済')">店頭でお支払い (レジで会計後に調理)</button>
     </div>
   </div>
 
@@ -396,10 +388,10 @@ if (IS_SYNC_READY) {
 }
 
 const MENU = [
-  { id: 'm1', payId: 'm1', name: 'フルーツシロップソーダ(ハイビスカス)', price: 350, img: 'hibiscus.jpg', stock: 20 },
-  { id: 'm4', payId: 'm4', name: 'フルーツシロップソーダ(カシス)', price: 350, img: 'cassis.jpg', stock: 20 },
-  { id: 'm2', payId: 'm2', name: 'カシスウーロン(ソフトドリンク)', price: 350, stock: 15, img: 'oolong.jpg' },
-  { id: 'm3', payId: 'm3', name: 'アイスコーヒー', price: 300, stock: 30, img: 'coffee.jpg' }
+  { id: 'm1', name: 'フルーツシロップソーダ(ハイビスカス)', price: 350, img: 'hibiscus.jpg', stock: 20 },
+  { id: 'm4', name: 'カシスソーダ', price: 350, img: 'cassis.jpg', stock: 20 },
+  { id: 'm2', name: 'カシスウーロン(ソフトドリンク)', price: 350, stock: 15, img: 'oolong.jpg' },
+  { id: 'm3', name: 'アイスコーヒー', price: 300, stock: 30, img: 'coffee.jpg' }
 ];
 
 let ST = { wait: 8, stk: {}, ord: [], isAccepting: true };
@@ -448,8 +440,8 @@ function toast(m) {
 }
 
 function getTimeStr() {
-  const now = new Date();
-  return String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  const now = new Date(Date.now() + 9 * 3600 * 1000);
+  return String(now.getUTCHours()).padStart(2, '0') + ':' + String(now.getUTCMinutes()).padStart(2, '0');
 }
 
 function mergeWithLocalCache(serverOrdList) {
@@ -650,7 +642,7 @@ $('#addBtn').addEventListener('click', ()=>{
   if (!ST.isAccepting) { toast('現在注文受付を停止しています'); cloSh(); return; }
   if (CS.q > getMaxAddable()) { toast('在庫が不足しています'); return; }
   const spText = CS.i.opts ? CS.i.opts.map(g => CS.s[g.k]).filter(Boolean).join(' / ') : '';
-  CA.push({ id: CS.i.id, payId: CS.i.payId || CS.i.id, nm: CS.i.name, pr: CS.i.price, q: CS.q, sp: spText });
+  CA.push({ id: CS.i.id, nm: CS.i.name, pr: CS.i.price, q: CS.q, sp: spText });
   uC(); cloSh(); toast('カートに追加しました');
 });
 
@@ -786,123 +778,67 @@ async function processPaymentToken(token) {
   }
 
   if (response.ok && data.success) {
-    if (data.orderId) {
-      const oData = data.order || {
-        id: data.orderId,
-        md: '事前決済',
-        tm: getTimeStr(),
-        it: [...CA],
-        st: 'new',
-        ts: Date.now()
-      };
-      if (!myOrders.includes(data.orderId)) myOrders.push(data.orderId);
-      myOrderCache[data.orderId] = oData;
-      saveLocalOrders();
-      if (IS_SYNC_READY) {
-        dbRef.child('ord/' + data.orderId).set(oData);
-      }
-      finishOrderUI(data.orderId, '事前決済', oData);
+    const oid = data.orderId || ('BIKO-' + Math.floor(1000+Math.random()*9000));
+    const cleanItems = CA.map(c => ({
+      id: c.id,
+      nm: c.nm,
+      pr: Number(c.pr),
+      q: Number(c.q),
+      sp: c.sp || ''
+    }));
+    const oData = {
+      id: oid,
+      md: '事前決済',
+      tm: getTimeStr(),
+      it: cleanItems,
+      st: 'new',
+      ts: Date.now()
+    };
+
+    if (!myOrders.includes(oid)) myOrders.push(oid);
+    myOrderCache[oid] = oData;
+    if (!ST.ord.some(x => x.id === oid)) ST.ord.push(oData);
+    saveLocalOrders();
+
+    const totalsById = {};
+    cleanItems.forEach(c => {
+      totalsById[c.id] = (totalsById[c.id] || 0) + c.q;
+    });
+
+    if (IS_SYNC_READY) {
+      dbRef.child('ord/' + oid).set(oData);
+      Object.keys(totalsById).forEach(id => {
+        const qtyToDeduct = totalsById[id];
+        dbRef.child('stk/' + id).transaction(currentStock => {
+          const cur = currentStock ?? (ST.stk[id] || 0);
+          return Math.max(0, cur - qtyToDeduct);
+        });
+      });
     } else {
-      executeOrder('事前決済');
+      Object.keys(totalsById).forEach(id => {
+        ST.stk[id] = Math.max(0, (ST.stk[id] || 0) - totalsById[id]);
+      });
     }
+
+    CA = []; uC(); cloSh();
+    rMenu(); rOrd(); rK();
+
+    $('#sTitle').textContent = 'Thank you!';
+    $('#sMsg').innerHTML = 'ご注文ありがとうございます。<br>心を込めてお作りします。';
+    $('#sOid').textContent = oid;
+    $('#success').classList.add('on');
+
+    setTimeout(()=>{
+      $('#success').classList.remove('on');
+      $$('.tab').forEach(x=>x.classList.toggle('on', x.dataset.tab==='orders'));
+      $$('.pane').forEach(p=>p.classList.toggle('on', p.id==='p-orders'));
+      rOrd();
+      window.scrollTo(0,0);
+    }, 3200);
+
   } else {
     toast(formatErr(data.error) || "決済が承認されませんでした");
   }
-}
-
-window.doOrder = (md) => {
-  if (isOrdering) return;
-  if (!ST.isAccepting) { toast('現在注文受付を停止しています'); cloSh(); return; }
-  if (!validateCartStock()) { cloSh(); return; }
-  executeOrder(md);
-};
-
-function finishOrderUI(oid, md = '事前決済', oData = null) {
-  if (!myOrders.includes(oid)) {
-    myOrders.push(oid);
-  }
-  if (oData) {
-    myOrderCache[oid] = oData;
-    if (!ST.ord.some(x => x.id === oid)) {
-      ST.ord.push(oData);
-    }
-  }
-  saveLocalOrders();
-  CA = []; uC(); cloSh();
-  rMenu(); rOrd(); rK();
-  
-  if (md.startsWith('店頭決済')) {
-    $('#sTitle').textContent = 'Proceed to Cashier';
-    $('#sMsg').innerHTML = '仮受付いたしました。<br><b>レジにて番号をお伝えいただき、お支払い後に調理を開始いたします。</b>';
-  } else {
-    $('#sTitle').textContent = 'Thank you!';
-    $('#sMsg').innerHTML = 'ご注文ありがとうございます。<br>心を込めてお作りします。';
-  }
-
-  $('#sOid').textContent = oid; $('#success').classList.add('on');
-  setTimeout(()=>{
-    $('#success').classList.remove('on');
-    $$('.tab').forEach(x=>x.classList.toggle('on', x.dataset.tab==='orders'));
-    $$('.pane').forEach(p=>p.classList.toggle('on', p.id==='p-orders'));
-    rOrd();
-    window.scrollTo(0,0);
-  }, 3200);
-}
-
-function executeOrder(md) {
-  if (!CA.length) return;
-  const oid = 'BIKO-' + Math.floor(1000+Math.random()*9000);
-  // Firebaseのルール(6項目のみ・stはnew/prep/done/archivedのみ)に100%準拠
-  const initMd = md === '店頭決済' ? '店頭決済(未会計)' : '事前決済';
-  const cleanItems = CA.map(c => ({
-    id: c.id,
-    payId: c.payId || c.id,
-    nm: c.nm,
-    pr: Number(c.pr),
-    q: Number(c.q),
-    sp: c.sp || ''
-  }));
-  const oData = {
-    id: oid,
-    md: initMd,
-    tm: getTimeStr(),
-    it: cleanItems,
-    st: 'new',
-    ts: Date.now()
-  };
-
-  // 1. まずスマホ内の注文リストとキャッシュに即座に保存（これでOrders画面から絶対に消えない）
-  if (!myOrders.includes(oid)) {
-    myOrders.push(oid);
-  }
-  myOrderCache[oid] = oData;
-  if (!ST.ord.some(x => x.id === oid)) {
-    ST.ord.push(oData);
-  }
-  saveLocalOrders();
-
-  const totalsById = {};
-  cleanItems.forEach(c => {
-    totalsById[c.id] = (totalsById[c.id] || 0) + c.q;
-  });
-
-  // 2. Firebaseへ注文と在庫減算を保存
-  if (IS_SYNC_READY) {
-    dbRef.child('ord/' + oid).set(oData);
-    Object.keys(totalsById).forEach(id => {
-      const qtyToDeduct = totalsById[id];
-      dbRef.child('stk/' + id).transaction(currentStock => {
-        const cur = currentStock ?? (ST.stk[id] || 0);
-        return Math.max(0, cur - qtyToDeduct);
-      });
-    });
-  } else {
-    Object.keys(totalsById).forEach(id => {
-      ST.stk[id] = Math.max(0, (ST.stk[id] || 0) - totalsById[id]);
-    });
-  }
-
-  finishOrderUI(oid, initMd, oData);
 }
 
 window.hideOrder = (oid) => {
@@ -925,17 +861,15 @@ function rOrd() {
 
   if(!myCurrentOrders.length) { ar.innerHTML = '<div style="text-align:center;padding:40px 0;color:#888">注文はありません</div>'; return; }
   ar.innerHTML = [...myCurrentOrders].reverse().map(o => {
-    const isUnpaid = o.md === '店頭決済(未会計)' && o.st === 'new';
     const isP = o.st === 'prep' || o.st === 'done', isD = o.st === 'done';
     const w = isD ? '100%' : (isP ? '50%' : '0%');
     const totalAmt = getOrderTotal(o);
-    const statusTitle = isUnpaid ? 'レジでお支払い待ち' : (isD ? 'お渡し準備完了' : (isP ? '調理中' : '受付完了'));
+    const statusTitle = isD ? 'お渡し準備完了' : (isP ? '調理中' : '受付完了');
 
     return `<div class="trk-wrap">
-      <div class="trk-head"><div class="trk-ti" style="${isUnpaid ? 'color:#C97400;' : ''}">${statusTitle}</div><div class="trk-id">${o.id}</div></div>
-      ${isUnpaid ? `<div class="unpaid-box">レジにて番号【${o.id}】をお伝えの上、<br>合計 <b>¥${totalAmt}</b> をお支払いください。<br><span style="font-size:11px;font-weight:600;">※お支払い確認後に調理を開始いたします</span></div>` : ''}
+      <div class="trk-head"><div class="trk-ti">${statusTitle}</div><div class="trk-id">${o.id}</div></div>
       <div class="trk"><div class="trk-fill" style="width:${w}"></div>
-      <div class="trk-step ${isUnpaid ? 'warn' : 'act'}"><div class="trk-dot"><svg><use href="#i-check"/></svg></div>${isUnpaid ? '会計待ち' : '受付済'}</div>
+      <div class="trk-step act"><div class="trk-dot"><svg><use href="#i-check"/></svg></div>受付済</div>
       <div class="trk-step ${isP ? 'act' : ''}"><div class="trk-dot"><svg><use href="#i-check"/></svg></div>調理中</div>
       <div class="trk-step ${isD ? 'act' : ''}"><div class="trk-dot"><svg><use href="#i-check"/></svg></div>受取可</div></div>
       <div class="trk-items">${o.it.map(c=>`${c.nm} ${c.sp?'('+c.sp+')':''} <span style="color:#888;font-size:12px;font-weight:400">×${c.q}</span>`).join('<br>')}
@@ -982,20 +916,15 @@ window.cStk = (id,d)=>{
 window.adv = (i, reverse = false) => {
   const o = ST.ord[i];
   if (!o) return;
-  const isUnpaid = o.md === '店頭決済(未会計)' && o.st === 'new';
 
   if (reverse) {
     if (o.st === 'done') {
       updateOrderField(o, 'st', 'prep');
     } else if (o.st === 'prep') {
       updateOrderField(o, 'st', 'new');
-    } else if (o.st === 'new' && o.md === '店頭決済(会計済)') {
-      updateOrderField(o, 'md', '店頭決済(未会計)');
     }
   } else {
-    if (isUnpaid) {
-      updateOrderField(o, 'md', '店頭決済(会計済)');
-    } else if (o.st === 'new') {
+    if (o.st === 'new') {
       updateOrderField(o, 'st', 'prep');
     } else if (o.st === 'prep') {
       updateOrderField(o, 'st', 'done');
@@ -1026,34 +955,6 @@ function updateOrderField(o, field, val) {
   rOrd();
 }
 
-window.cancelUnpaid = (i) => {
-  const o = ST.ord[i];
-  if (!o) return;
-
-  const totalsById = {};
-  (o.it || []).forEach(c => {
-    totalsById[c.id] = (totalsById[c.id] || 0) + c.q;
-  });
-
-  if (IS_SYNC_READY) {
-    Object.keys(totalsById).forEach(id => {
-      const qtyToRestore = totalsById[id];
-      dbRef.child('stk/' + id).transaction(currentStock => {
-        const cur = currentStock ?? (ST.stk[id] || 0);
-        return cur + qtyToRestore;
-      });
-    });
-    updateOrderField(o, 'st', 'archived');
-  } else {
-    Object.keys(totalsById).forEach(id => {
-      ST.stk[id] = (ST.stk[id] || 0) + totalsById[id];
-    });
-    o.st = 'archived';
-    rMenu(); rOrd(); rK();
-  }
-  toast(`${o.id} を取り消し、在庫を戻しました`);
-};
-
 function rK() {
   $('#kWait').textContent = ST.wait;
   $('#kStock').innerHTML = MENU.map(m => `<div class="k-card"><div><b>${m.name}</b></div><div style="display:flex;gap:12px;align-items:center"><button class="k-btn gh tap" onclick="cStk('${m.id}',-1)">-</button><span style="font-size:16px;font-weight:700;width:24px;text-align:center">${ST.stk[m.id]||0}</span><button class="k-btn gh tap" onclick="cStk('${m.id}',1)">+</button></div></div>`).join('');
@@ -1061,35 +962,23 @@ function rK() {
   const ao = ST.ord.map((o,i)=>({...o,i})).filter(o => o.st !== 'archived').sort((a,b) => b.ts - a.ts);
   
   $('#kOrders').innerHTML = ao.length ? ao.map(o => {
-    const isUnpaid = o.md === '店頭決済(未会計)' && o.st === 'new';
     const isDone = o.st === 'done';
-    const isNew = o.st === 'new';
     const totalAmt = getOrderTotal(o);
 
     let btnText = '調理開始';
-    if (isUnpaid) btnText = ` 会計確認 (¥${totalAmt})`;
-    else if (o.st === 'prep') btnText = '完了';
+    if (o.st === 'prep') btnText = '完了';
     else if (isDone) btnText = 'お渡し済 (消す)';
 
-    let payBadge = '';
-    if (o.md === '事前決済') {
-      payBadge = `<span style="color:var(--leaf);font-weight:700;">事前決済(決済済 ¥${totalAmt})</span>`;
-    } else if (isUnpaid) {
-      payBadge = `<span style="color:var(--warn);font-weight:700;"> 店頭決済(未会計 ¥${totalAmt})</span>`;
-    } else {
-      payBadge = `<span style="color:var(--leaf);font-weight:700;">店頭決済(会計済 ¥${totalAmt})</span>`;
-    }
-
-    const canReverse = !isUnpaid && !(isNew && o.md === '事前決済');
+    const payBadge = `<span style="color:var(--leaf);font-weight:700;">事前決済(決済済 ¥${totalAmt})</span>`;
+    const canReverse = o.st !== 'new';
     
-    return `<div class="k-card" style="align-items:flex-start; ${isDone ? 'opacity:0.6;' : ''} ${isUnpaid ? 'border:1px solid var(--warn);' : ''}">
+    return `<div class="k-card" style="align-items:flex-start; ${isDone ? 'opacity:0.6;' : ''}">
       <div style="flex:1">
-        <div style="font-size:12px;color:#888">${o.id} / ${payBadge} / ${o.tm}</div>
-        <div style="margin-top:8px;font-weight:700;line-height:1.6">${o.it.map(c=>`${c.nm} ${c.sp?'('+c.sp+')':''} x${c.q}`).join('<br>')}</div>
+        <div style="font-size:12px; color:#888;">${o.id} / ${payBadge} / ${o.tm}</div>
+        <div style="margin-top:8px; font-weight:700; line-height:1.6">${o.it.map(c=>`${c.nm} ${c.sp?'('+c.sp+')':''} x${c.q}`).join('<br>')}</div>
       </div>
       <div style="display:flex; flex-direction:column; gap:8px;">
-        <button class="k-btn ${isUnpaid ? 'warn' : ''} tap" onclick="adv(${o.i})" ${isDone ? 'style="background:#333;color:#fff;"' : ''}>${btnText}</button>
-        ${isUnpaid ? `<button class="k-btn gh tap" onclick="cancelUnpaid(${o.i})" style="font-size:11px; padding:4px 8px; color:#FF3B30; border-color:#552222;">取消(在庫戻す)</button>` : ''}
+        <button class="k-btn tap" onclick="adv(${o.i})" ${isDone ? 'style="background:#333;color:#fff;"' : ''}>${btnText}</button>
         ${canReverse ? `<button class="k-btn gh tap" onclick="adv(${o.i}, true)" style="font-size:11px; padding:4px 8px;">戻す</button>` : ''}
       </div>
     </div>`;
