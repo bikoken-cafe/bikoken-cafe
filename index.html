@@ -57,7 +57,7 @@ a { color: inherit; text-decoration: none; }
 .ic { width: 24px; height: 24px; display: inline-block; vertical-align: middle; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;}
 
 /* =========================================================
-   Luxury Splash Screen (iOS Safari Complete Fix)
+   Luxury Splash Screen (Zero-Bug Direct Render Architecture)
    ========================================================= */
 #splash {
   position: fixed;
@@ -65,9 +65,10 @@ a { color: inherit; text-decoration: none; }
   left: 0;
   right: 0;
   bottom: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 9999;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  z-index: 99999;
   background-color: #FFFFFF;
   display: flex;
   flex-direction: column;
@@ -75,93 +76,40 @@ a { color: inherit; text-decoration: none; }
   justify-content: center;
   pointer-events: auto;
   touch-action: none;
-  transition: background-color 0.65s ease, opacity 0.3s ease;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  transition: background-color 0.6s ease, opacity 0.35s ease;
 }
-#splash.docking {
-  background-color: rgba(255, 255, 255, 0);
+#splash.sp-docking {
+  background-color: rgba(255, 255, 255, 0) !important;
   pointer-events: none;
 }
-#splash.hidden {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
+#splash.sp-hidden {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
   display: none !important;
 }
 
-.splash-mover {
-  display: inline-block;
+#splashMover {
+  display: block;
   transform-origin: center center;
-  transform: translate(0px, 0px) scale(1.55);
+  margin: 0;
+  padding: 0;
 }
-.splash-mover.docking {
-  transition: transform 0.75s cubic-bezier(0.76, 0, 0.24, 1);
-}
-
-.logo-wrap-splash {
-  display: inline-flex;
-  align-items: baseline;
-  white-space: nowrap;
-  color: #1C1C1E;
-}
-.logo-wrap-splash .logo-b {
-  font-family: Georgia, 'Times New Roman', serif;
-  font-weight: 700;
-  font-size: 26px;
-  color: #1C1C1E;
-}
-.logo-wrap-splash .logo-iko {
-  font-family: Georgia, 'Times New Roman', serif;
-  font-weight: 700;
-  font-size: 26px;
-  color: #1C1C1E;
-}
-.logo-wrap-splash .logo-ken {
-  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-  font-weight: 400;
-  font-size: 22px;
-  letter-spacing: 0.08em;
-  color: #5A8B9C;
-  margin-left: 2px;
-}
-.logo-wrap-splash .logo-dot {
-  font-family: Georgia, 'Times New Roman', serif;
-  font-weight: 700;
-  font-size: 26px;
-  color: #34C759;
-  margin-left: 1px;
+#splashMover.sp-moving {
+  transition: transform 0.75s cubic-bezier(0.76, 0, 0.24, 1), -webkit-transform 0.75s cubic-bezier(0.76, 0, 0.24, 1);
 }
 
-.splash-line {
-  width: 52px;
-  height: 1.5px;
-  background-color: #5A8B9C;
-  margin-top: 22px;
-  opacity: 0.65;
-  transition: opacity 0.2s ease;
+#splashMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: opacity 0.22s ease, transform 0.25s ease;
 }
-.splash-sub {
-  font-family: -apple-system, BlinkMacSystemFont, Georgia, sans-serif;
-  font-size: 10px;
-  color: #8E8E93;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  margin-top: 12px;
-  font-weight: 600;
-  opacity: 1;
-  transition: opacity 0.2s ease;
-}
-
-#splash.docking .splash-line,
-#splash.docking .splash-sub {
+#splash.sp-docking #splashMeta {
   opacity: 0 !important;
-}
-
-#logoTap .logo-wrap {
-  opacity: 0;
-  transition: opacity 0.1s ease;
-}
-#logoTap .logo-wrap.ready {
-  opacity: 1;
+  transform: translateY(-4px);
 }
 
 /* =========================================================
@@ -352,21 +300,24 @@ a { color: inherit; text-decoration: none; }
 </defs>
 </svg>
 
-<div id="splash">
-  <div class="splash-mover" id="splashMover">
-    <div class="logo-wrap-splash" id="splashLogo">
-      <span class="logo-b">B</span><span class="logo-iko">IKO</span><span class="logo-ken">KEN</span><span class="logo-dot">.</span>
+<!-- どんなiOS Safari環境でも0.0秒目から確実に描画される直接インラインスタイル付きロード画面 -->
+<div id="splash" style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background-color:#FFFFFF;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+  <div id="splashMover" style="display:block;transform-origin:center center;">
+    <div id="splashLogo" style="display:flex;align-items:baseline;white-space:nowrap;line-height:1;">
+      <span class="sp-b" style="font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:40px;color:#1C1C1E;">B</span><span class="sp-iko" style="font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:40px;color:#1C1C1E;">IKO</span><span class="sp-ken" style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-weight:400;font-size:35px;letter-spacing:0.08em;color:#5A8B9C;margin-left:3px;">KEN</span><span class="sp-dot" style="font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:40px;color:#34C759;margin-left:2px;">.</span>
     </div>
   </div>
-  <div class="splash-line"></div>
-  <div class="splash-sub">Gastronomy &amp; Coffee</div>
+  <div id="splashMeta" style="display:flex;flex-direction:column;align-items:center;">
+    <div style="width:48px;height:1.5px;background-color:#5A8B9C;margin-top:18px;opacity:0.7;"></div>
+    <div style="font-family:-apple-system,BlinkMacSystemFont,Georgia,sans-serif;font-size:10px;color:#8E8E93;letter-spacing:0.28em;text-transform:uppercase;margin-top:12px;font-weight:600;">Gastronomy &amp; Coffee</div>
+  </div>
 </div>
 
 <div id="app">
   <div class="header">
     <div class="header-in">
       <button class="header-logo tap" id="logoTap" title="KDS">
-        <div class="logo-wrap">
+        <div class="logo-wrap" id="headerLogoWrap" style="opacity:0;transition:opacity 0.15s ease;">
           <span class="logo-b">B</span>
           <span class="logo-rest"><span class="logo-iko">IKO</span><span class="logo-ken">KEN</span></span>
           <span class="logo-dot">.</span>
@@ -375,70 +326,6 @@ a { color: inherit; text-decoration: none; }
       <div class="status-pill" id="syncPill" style="color:var(--ink-sub); border-color:var(--line); background:var(--bg-card);">約 <span id="hdWait" style="margin:0 2px;">8</span> 分待ち</div>
     </div>
   </div>
-
-  <script>
-  window.__splashActive = true;
-  (function(){
-    var sp = document.getElementById('splash');
-    var mv = document.getElementById('splashMover');
-    var hd = document.querySelector('#logoTap .logo-wrap');
-    var headerBar = document.querySelector('.header');
-    var appBox = document.getElementById('app');
-    if (!sp || !mv || !hd) {
-      window.__splashActive = false;
-      return;
-    }
-
-    var initScale = window.innerWidth >= 600 ? 1.8 : 1.55;
-    mv.style.transform = 'translate(0px, 0px) scale(' + initScale + ')';
-
-    var done = false;
-    function finishSplash() {
-      if (done) return;
-      done = true;
-      window.__splashActive = false;
-      hd.classList.add('ready');
-      sp.classList.add('hidden');
-    }
-
-    var safeTimer = setTimeout(finishSplash, 2400);
-
-    setTimeout(function() {
-      try {
-        if (appBox) appBox.scrollTop = 0;
-        window.scrollTo(0, 0);
-        if (headerBar) headerBar.classList.remove('scrolled');
-
-        var sRect = mv.getBoundingClientRect();
-        var tRect = hd.getBoundingClientRect();
-
-        if (tRect.width > 10 && sRect.width > 10) {
-          var sCx = sRect.left + sRect.width / 2;
-          var sCy = sRect.top + sRect.height / 2;
-          var tCx = tRect.left + tRect.width / 2;
-          var tCy = tRect.top + tRect.height / 2;
-
-          var dx = tCx - sCx;
-          var dy = tCy - sCy;
-          var finalScale = initScale * (tRect.width / sRect.width);
-
-          sp.classList.add('docking');
-          mv.classList.add('docking');
-          mv.style.transform = 'translate(' + dx + 'px, ' + dy + 'px) scale(' + finalScale + ')';
-
-          setTimeout(function() {
-            clearTimeout(safeTimer);
-            finishSplash();
-          }, 760);
-        } else {
-          finishSplash();
-        }
-      } catch (e) {
-        finishSplash();
-      }
-    }, 900);
-  })();
-  </script>
 
   <section class="pane on" id="p-menu">
     <div id="stop-banner" style="display:none; margin: 8px 20px 16px; background: rgba(255,59,48,0.1); color: var(--alert); border: 1px solid rgba(255,59,48,0.3); border-radius: 8px; padding: 12px; text-align: center; font-weight: 700; font-size: 13px;">
@@ -570,6 +457,73 @@ a { color: inherit; text-decoration: none; }
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- 外部スクリプト(Firebase/Square)の通信を待たずに即座にロード画面のアニメーションを制御するスクリプト -->
+<script>
+window.__splashActive = true;
+(function() {
+  var sp = document.getElementById('splash');
+  var mv = document.getElementById('splashMover');
+  var hd = document.getElementById('headerLogoWrap');
+  var headerBar = document.querySelector('.header');
+  var appBox = document.getElementById('app');
+
+  if (!sp || !mv || !hd) {
+    window.__splashActive = false;
+    if (hd) hd.style.opacity = '1';
+    if (sp) sp.style.display = 'none';
+    return;
+  }
+
+  var finished = false;
+  function completeSplash() {
+    if (finished) return;
+    finished = true;
+    window.__splashActive = false;
+    hd.style.opacity = '1';
+    sp.classList.add('sp-hidden');
+  }
+
+  var backupTimer = setTimeout(completeSplash, 2500);
+
+  setTimeout(function() {
+    try {
+      if (appBox) appBox.scrollTop = 0;
+      window.scrollTo(0, 0);
+      if (headerBar) headerBar.classList.remove('scrolled');
+
+      var sRect = mv.getBoundingClientRect();
+      var tRect = hd.getBoundingClientRect();
+
+      if (sRect.width > 10 && tRect.width > 10) {
+        var sCx = sRect.left + sRect.width / 2;
+        var sCy = sRect.top + sRect.height / 2;
+        var tCx = tRect.left + tRect.width / 2;
+        var tCy = tRect.top + tRect.height / 2;
+
+        var dx = tCx - sCx;
+        var dy = tCy - sCy;
+        var ratio = tRect.width / sRect.width;
+
+        sp.classList.add('sp-docking');
+        mv.classList.add('sp-moving');
+        var tf = 'translate(' + dx.toFixed(1) + 'px, ' + dy.toFixed(1) + 'px) scale(' + ratio.toFixed(3) + ')';
+        mv.style.webkitTransform = tf;
+        mv.style.transform = tf;
+
+        setTimeout(function() {
+          clearTimeout(backupTimer);
+          completeSplash();
+        }, 760);
+      } else {
+        completeSplash();
+      }
+    } catch (err) {
+      completeSplash();
+    }
+  }, 950);
+})();
+</script>
 
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
